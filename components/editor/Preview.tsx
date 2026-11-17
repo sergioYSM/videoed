@@ -4,6 +4,7 @@ import { Engine } from '@/lib/engine';
 import { duration } from '@/lib/project';
 import { useEditor } from '@/store/editor';
 import { Transport } from '@/components/ui/Transport';
+import { CanvasOverlay } from './CanvasOverlay';
 
 export interface PreviewHandle { toggle: () => void; pause: () => void; seek: (ms: number) => void }
 
@@ -44,6 +45,7 @@ export const Preview = forwardRef<PreviewHandle, { projectId: string }>(function
       <div className="relative flex min-h-0 flex-1 items-center justify-center p-4">
         <canvas ref={canvas} width={W} height={H} className="max-h-full max-w-full bg-canvas-bg shadow-pop" style={{ aspectRatio: `${p.width} / ${p.height}` }}
           role="img" aria-label={p.clips.length ? 'Fotograma actual del vídeo' : 'Vista previa vacía'} />
+        <CanvasOverlay canvas={canvas} />
         {!p.clips.length && <p className="absolute text-center text-sm text-text-muted">Importa vídeos desde el panel <b>Medios</b> para empezar.</p>}
       </div>
       <Transport playing={playing} timeMs={playhead} durationMs={duration(p)} fps={p.fps} onToggle={api.toggle} onStep={(d) => { api.pause(); api.seek(playhead + (d * 1000) / p.fps); }} />

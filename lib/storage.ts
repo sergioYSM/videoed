@@ -1,15 +1,15 @@
 'use client';
 // Everything stays on this device: media files in OPFS, project documents in IndexedDB.
 import { openDB, type IDBPDatabase } from 'idb';
-import type { Project } from './project';
+import { migrate, type Project } from './project';
 
 let dbp: Promise<IDBPDatabase> | null = null;
 const db = () => (dbp ??= openDB('videoed', 1, { upgrade(d) { d.createObjectStore('projects', { keyPath: 'id' }); } }));
 
 export async function saveProject(p: Project) { await (await db()).put('projects', p); }
-export async function loadProject(id: string): Promise<Project | undefined> { return (await db()).get('projects', id); }
+export async function loadProject(id: string): Promise<Project | undefined> { const p = await (await db()).get('projects', id); return p && migrate(p); }
 export async function listProjects(): Promise<Project[]> {
-  return ((await (await db()).getAll('projects')) as Project[]).sort((a, b) => b.updatedAt - a.updatedAt);
+  return ((await (await db()).getAll('projects')) as Project[]).map(migrate).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 export async function deleteProject(id: string) {
   await (await db()).delete('projects', id);

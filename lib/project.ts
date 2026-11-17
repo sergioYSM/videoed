@@ -12,9 +12,19 @@ export interface AssetRef {
 }
 /** A clip on the main track. Main track is magnetic: clips play back to back, no gaps. */
 export interface Clip { id: string; assetId: string; inMs: number; outMs: number; fit: 'fill' | 'fit'; volume: number }
+export type FontId = 'Figtree' | 'Anton' | 'Montserrat' | 'Bebas Neue' | 'Permanent Marker';
+export const FONTS: FontId[] = ['Figtree', 'Anton', 'Montserrat', 'Bebas Neue', 'Permanent Marker'];
+export interface TextStyle { font: FontId; size: number /* px at 1920 tall */; color: string; stroke: string | null; bg: string | null; weight: 400 | 700 | 900; align: 'left' | 'center' | 'right' }
+/** Overlays live at absolute times (not magnetic). x, y = centre, as a fraction of the frame. */
+export interface TextItem { id: string; text: string; startMs: number; endMs: number; x: number; y: number; scale: number; style: TextStyle }
+export interface AudioItem { id: string; assetId: string; startMs: number; inMs: number; outMs: number; volume: number; fadeInMs: number; fadeOutMs: number; credit?: string }
+export interface Cue { id: string; startMs: number; endMs: number; text: string }
+export type CaptionPreset = 'clasico' | 'caja' | 'grande';
+export interface Captions { cues: Cue[]; preset: CaptionPreset; y: number; lang?: string }
 export interface Project {
   id: string; name: string; aspect: Aspect; width: number; height: number; fps: number;
   createdAt: number; updatedAt: number; assets: AssetRef[]; clips: Clip[];
+  texts: TextItem[]; audio: AudioItem[]; captions: Captions;
 }
 
 export const MIN_CLIP_MS = 100;
@@ -26,10 +36,16 @@ const touch = (p: Project, patch: Partial<Project>): Project => ({ ...p, ...patc
 
 export function createProject(aspect: Aspect, name = 'Proyecto sin título', fps = 30): Project {
   const now = Date.now();
-  return { id: uid(), name, aspect, ...SIZES[aspect], fps, createdAt: now, updatedAt: now, assets: [], clips: [] };
+  return { id: uid(), name, aspect, ...SIZES[aspect], fps, createdAt: now, updatedAt: now, assets: [], clips: [], texts: [], audio: [], captions: { cues: [], preset: 'clasico', y: 0.8 } };
+}
+
+/** Projects saved before overlays existed get the new fields. */
+export function migrate(p: Project): Project {
+  return { ...p, texts: p.texts ?? [], audio: p.audio ?? [], captions: p.captions ?? { cues: [], preset: 'clasico', y: 0.8 } };
 }
 
 export const clipLength = (c: Clip) => c.outMs - c.inMs;
+/** The video ends with the main track; overlays past the end are cut at export. */
 export const duration = (p: Project) => p.clips.reduce((s, c) => s + clipLength(c), 0);
 /** Start time of each clip on the timeline. */
 export function starts(p: Project): number[] { const r: number[] = []; let t = 0; for (const c of p.clips) { r.push(t); t += clipLength(c); } return r; }
@@ -48,7 +64,7 @@ export function locate(p: Project, t: number): { index: number; clip: Clip; sour
 export function rename(p: Project, name: string): Project { return touch(p, { name: name.trim().slice(0, 120) || p.name }); }
 export function addAsset(p: Project, a: AssetRef): Project { return touch(p, { assets: [...p.assets, a] }); }
 export function removeAsset(p: Project, assetId: string): Project {
-  return touch(p, { assets: p.assets.filter((a) => a.id !== assetId), clips: p.clips.filter((c) => c.assetId !== assetId) });
+  return touch(p, { assets: p.assets.filter((a) => a.id !== assetId), clips: p.clips.filter((c) => c.assetId !== assetId), audio: p.audio.filter((a) => a.assetId !== assetId) });
 }
 
 /** Append (or insert at index) the whole asset as a clip. Images get 3 s. */
@@ -99,3 +115,87 @@ export function moveClip(p: Project, from: number, to: number): Project {
 export function setClip(p: Project, clipId: string, patch: Partial<Pick<Clip, 'fit' | 'volume'>>): Project {
   return touch(p, { clips: p.clips.map((c) => (c.id === clipId ? { ...c, ...patch } : c)) });
 }
+
+// ───────── text ─────────
+export const TEXT_PRESETS: Record<'titulo' | 'subtitulo' | 'etiqueta', Omit<TextItem, 'id' | 'startMs' | 'endMs'>> = {
+  titulo: { text: 'Tu título', x: 0.5, y: 0.3, scale: 1, style: { font: 'Anton', size: 120, color: '#ffffff', stroke: '#000000', bg: null, weight: 400, align: 'center' } },
+  subtitulo: { text: 'Escribe aquí', x: 0.5, y: 0.5, scale: 1, style: { font: 'Figtree', size: 72, color: '#ffffff', stroke: null, bg: null, weight: 700, align: 'center' } },
+  etiqueta: { text: 'NUEVO', x: 0.5, y: 0.15, scale: 1, style: { font: 'Montserrat', size: 56, color: '#0b0b14', stroke: null, bg: '#ffd400', weight: 900, align: 'center' } },
+};
+const clampOverlay = (p: Project, start: number, end: number) => {
+  const s = Math.max(0, snap(start, p.fps));
+  return { startMs: s, endMs: Math.max(s + MIN_CLIP_MS, snap(end, p.fps)) };
+};
+export function addText(p: Project, preset: keyof typeof TEXT_PRESETS, atMs: number, lengthMs = 3000): Project {
+  const t: TextItem = { id: uid(), ...structuredClone(TEXT_PRESETS[preset]), ...clampOverlay(p, atMs, atMs + lengthMs) };
+  return touch(p, { texts: [...p.texts, t] });
+}
+export function updateText(p: Project, id: string, patch: Partial<Omit<TextItem, 'id' | 'style'>> & { style?: Partial<TextStyle> }): Project {
+  return touch(p, { texts: p.texts.map((t) => {
+    if (t.id !== id) return t;
+    const n = { ...t, ...patch, style: { ...t.style, ...(patch.style ?? {}) } };
+    n.text = n.text.slice(0, 500);
+    n.x = Math.min(1, Math.max(0, n.x)); n.y = Math.min(1, Math.max(0, n.y)); n.scale = Math.min(8, Math.max(0.1, n.scale));
+    n.style.size = Math.min(400, Math.max(8, n.style.size));
+    return { ...n, ...clampOverlay(p, n.startMs, n.endMs) };
+  }) });
+}
+export function removeText(p: Project, id: string): Project { return touch(p, { texts: p.texts.filter((t) => t.id !== id) }); }
+export const textsAt = (p: Project, t: number) => p.texts.filter((x) => t >= x.startMs && t < x.endMs);
+
+/** Move an overlay in time (keeps its length) or move one of its edges. */
+export function moveSpan<T extends { startMs: number; endMs: number }>(fps: number, item: T, mode: 'move' | 'start' | 'end', toMs: number): Pick<T, 'startMs' | 'endMs'> {
+  const len = item.endMs - item.startMs, v = Math.max(0, snap(toMs, fps));
+  if (mode === 'move') return { startMs: v, endMs: v + len };
+  if (mode === 'start') return { startMs: Math.min(v, item.endMs - MIN_CLIP_MS), endMs: item.endMs };
+  return { startMs: item.startMs, endMs: Math.max(v, item.startMs + MIN_CLIP_MS) };
+}
+
+// ───────── audio ─────────
+export function addAudio(p: Project, assetId: string, atMs: number, credit?: string): Project {
+  const a = p.assets.find((x) => x.id === assetId);
+  if (!a || !a.hasAudio) return p;
+  const item: AudioItem = { id: uid(), assetId, startMs: Math.max(0, snap(atMs, p.fps)), inMs: 0, outMs: snap(a.durationMs, p.fps), volume: 1, fadeInMs: 0, fadeOutMs: 0, credit };
+  return touch(p, { audio: [...p.audio, item] });
+}
+export const audioEnd = (a: AudioItem) => a.startMs + (a.outMs - a.inMs);
+export function updateAudio(p: Project, id: string, patch: Partial<Omit<AudioItem, 'id' | 'assetId'>>): Project {
+  return touch(p, { audio: p.audio.map((a) => {
+    if (a.id !== id) return a;
+    const asset = p.assets.find((x) => x.id === a.assetId);
+    const n = { ...a, ...patch };
+    n.startMs = Math.max(0, snap(n.startMs, p.fps));
+    n.inMs = Math.max(0, snap(n.inMs, p.fps));
+    n.outMs = Math.min(asset?.durationMs ?? n.outMs, Math.max(n.inMs + MIN_CLIP_MS, snap(n.outMs, p.fps)));
+    n.volume = Math.min(2, Math.max(0, n.volume));
+    const len = n.outMs - n.inMs;
+    n.fadeInMs = Math.min(len, Math.max(0, n.fadeInMs)); n.fadeOutMs = Math.min(len - n.fadeInMs, Math.max(0, n.fadeOutMs));
+    return n;
+  }) });
+}
+/** Trim an audio item's left edge on the timeline: start and in-point move together. */
+export function trimAudioStart(p: Project, id: string, toTimelineMs: number): Project {
+  const a = p.audio.find((x) => x.id === id); if (!a) return p;
+  const d = Math.max(-a.inMs, Math.min(snap(toTimelineMs, p.fps) - a.startMs, a.outMs - a.inMs - MIN_CLIP_MS));
+  return updateAudio(p, id, { startMs: a.startMs + d, inMs: a.inMs + d });
+}
+export function removeAudio(p: Project, id: string): Project { return touch(p, { audio: p.audio.filter((a) => a.id !== id) }); }
+
+// ───────── captions ─────────
+export function setCues(p: Project, cues: Cue[], lang?: string): Project {
+  const clean = cues.map((c) => ({ ...c, text: c.text.trim().slice(0, 300), startMs: Math.max(0, Math.round(c.startMs)), endMs: Math.max(Math.round(c.startMs) + 100, Math.round(c.endMs)) }))
+    .filter((c) => c.text).sort((a, b) => a.startMs - b.startMs);
+  return touch(p, { captions: { ...p.captions, cues: clean, lang: lang ?? p.captions.lang } });
+}
+export function addCue(p: Project, atMs: number, text = 'Nuevo subtítulo'): Project {
+  const s = snap(atMs, p.fps);
+  return setCues(p, [...p.captions.cues, { id: uid(), startMs: s, endMs: s + 2000, text }]);
+}
+export function updateCue(p: Project, id: string, patch: Partial<Omit<Cue, 'id'>>): Project {
+  return setCues(p, p.captions.cues.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+}
+export function removeCue(p: Project, id: string): Project { return setCues(p, p.captions.cues.filter((c) => c.id !== id)); }
+export function setCaptionStyle(p: Project, patch: Partial<Pick<Captions, 'preset' | 'y'>>): Project {
+  return touch(p, { captions: { ...p.captions, ...patch, y: Math.min(0.95, Math.max(0.05, patch.y ?? p.captions.y)) } });
+}
+export const cueAt = (p: Project, t: number) => p.captions.cues.find((c) => t >= c.startMs && t < c.endMs) ?? null;

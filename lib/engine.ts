@@ -2,9 +2,11 @@
 // Preview player. The audio clock (AudioContext) is the master; video frames
 // are pulled from per-clip iterators to match it. Paused seeks fetch one frame.
 import type { WrappedCanvas } from 'mediabunny';
-import { type Project, locate, starts, clipLength, duration } from './project';
+import { type Project, locate, starts, clipLength, duration, audioEnd } from './project';
+import { scheduleGain } from './fades';
 import { getSource } from './sources';
 import { drawFrame } from './compositor';
+import { drawOverlays, ensureFonts } from './overlays';
 
 export class Engine {
   private ctx2d: CanvasRenderingContext2D;
@@ -14,6 +16,7 @@ export class Engine {
   private startCtx = 0; private startMs = 0;
   private raf = 0; private seekToken = 0; private runToken = 0;
   private scheduled: AudioBufferSourceNode[] = [];
+  private last: HTMLCanvasElement | null = null;
   private iter: { clipId: string; it: AsyncGenerator<WrappedCanvas | null, void, unknown>; next: WrappedCanvas | null } | null = null;
   onTime: (ms: number) => void = () => {};
   onEnded: () => void = () => {};
@@ -30,13 +33,15 @@ export class Engine {
     this.startMs = t;
     const token = ++this.seekToken;
     const hit = locate(this.p, t);
-    if (!hit) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, null, 'fill'); return; }
+    await ensureFonts(this.p);
+    if (!hit) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, null, 'fill'); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); return; }
     const asset = this.p.assets.find((a) => a.id === hit.clip.assetId)!;
     const src = await getSource(this.projectId, asset);
     let img: CanvasImageSource & { width: number; height: number } | null = src.image ?? null;
     if (src.sink) img = (await src.sink.getCanvas(hit.sourceMs / 1000))?.canvas as HTMLCanvasElement ?? null;
     if (token !== this.seekToken || this.playing) return;
     drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, img, hit.clip.fit);
+    drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t);
   }
 
   async play(from = this.startMs) {
@@ -50,6 +55,7 @@ export class Engine {
     this.playing = true; this.startMs = from; this.startCtx = this.audio.currentTime + 0.05;
     const token = ++this.runToken;
     this.scheduleAudio(token, from);
+    this.scheduleMusic(token, from);
     const loop = async () => {
       if (!this.playing || token !== this.runToken) return;
       const t = this.time();
@@ -78,7 +84,7 @@ export class Engine {
     const asset = this.p.assets.find((a) => a.id === hit.clip.assetId)!;
     const src = await getSource(this.projectId, asset);
     if (token !== this.runToken) return;
-    if (src.image) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, src.image, hit.clip.fit); return; }
+    if (src.image) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, src.image, hit.clip.fit); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); return; }
     if (!src.sink) return;
     const s = hit.sourceMs / 1000;
     if (!this.iter || this.iter.clipId !== hit.clip.id) {
@@ -94,7 +100,36 @@ export class Engine {
       if (token !== this.runToken) return;
       this.iter.next = n.done ? null : n.value;
     }
-    if (shown) drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, shown.canvas as HTMLCanvasElement, hit.clip.fit);
+    if (shown) { this.last = shown.canvas as HTMLCanvasElement; }
+    // redraw every tick so overlays appear/disappear on time even between video frames
+    if (this.last) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, this.last, hit.clip.fit); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); }
+  }
+
+  /** Audio track items (music, voice-overs): absolute times, volume and fades. */
+  private async scheduleMusic(token: number, from: number) {
+    const total = duration(this.p);
+    await Promise.all(this.p.audio.map(async (a) => {
+      const end = Math.min(audioEnd(a), total);
+      if (end <= from || a.volume === 0) return;
+      const asset = this.p.assets.find((x) => x.id === a.assetId); if (!asset) return;
+      const src = await getSource(this.projectId, asset);
+      if (!src.audioSink || token !== this.runToken || !this.audio || !this.gain) return;
+      const g = this.audio.createGain(); g.connect(this.gain);
+      scheduleGain(g.gain, a, from, this.startCtx);
+      const inS = (a.inMs + Math.max(0, from - a.startMs)) / 1000, outS = (a.inMs + (end - a.startMs)) / 1000;
+      const stopAt = this.startCtx + (end - from) / 1000;
+      for await (const { buffer, timestamp } of src.audioSink.buffers(inS, outS)) {
+        if (token !== this.runToken || !this.audio) return;
+        const tl = a.startMs + (timestamp * 1000 - a.inMs);
+        const when = this.startCtx + (tl - from) / 1000;
+        const offset = Math.max(0, this.audio.currentTime - when, inS - timestamp);
+        if (offset >= buffer.duration) continue;
+        const n = this.audio.createBufferSource(); n.buffer = buffer; n.connect(g);
+        n.start(Math.max(when, this.audio.currentTime), offset); n.stop(stopAt);
+        this.scheduled.push(n);
+        while (when - this.audio.currentTime > 4 && token === this.runToken) await new Promise((r) => setTimeout(r, 250));
+      }
+    }));
   }
 
   private async scheduleAudio(token: number, from: number) {

@@ -81,3 +81,54 @@ test('rename trims, caps at 120 and ignores empty names', () => {
   assert.equal(P.rename(p, 'x'.repeat(200)).name.length, 120);
   assert.equal(P.rename(p, '   ').name, p.name);
 });
+
+test('text overlays: add at the playhead, clamp position/size, move in time', () => {
+  let p = base();
+  p = P.addText(p, 'titulo', 1010);
+  const t = p.texts[0];
+  assert.deepEqual([t.startMs, t.endMs], [1000, 4000]);
+  p = P.updateText(p, t.id, { x: 2, y: -1, scale: 99, style: { size: 9999 } });
+  assert.deepEqual([p.texts[0].x, p.texts[0].y, p.texts[0].scale, p.texts[0].style.size], [1, 0, 8, 400]);
+  assert.equal(p.texts[0].style.font, 'Anton', 'style patch merges');
+  assert.equal(P.textsAt(p, 3999).length, 1); assert.equal(P.textsAt(p, 4000).length, 0);
+  assert.deepEqual(P.moveSpan(30, p.texts[0], 'move', 2000), { startMs: 2000, endMs: 5000 });
+  assert.deepEqual(P.moveSpan(30, p.texts[0], 'end', 500), { startMs: 1000, endMs: 1100 });
+});
+
+test('audio items: fades never exceed the length, trim start moves the in-point', () => {
+  let p = P.addAsset(base(), { id: 'm', name: 'm', kind: 'audio', mime: 'audio/mpeg', size: 1, durationMs: 10000, hasAudio: true });
+  p = P.addAudio(p, 'm', 0);
+  const id = p.audio[0].id;
+  p = P.updateAudio(p, id, { fadeInMs: 8000, fadeOutMs: 8000, volume: 5 });
+  assert.deepEqual([p.audio[0].fadeInMs, p.audio[0].fadeOutMs, p.audio[0].volume], [8000, 2000, 2]);
+  p = P.trimAudioStart(p, id, 1500);
+  assert.deepEqual([p.audio[0].startMs, p.audio[0].inMs, P.audioEnd(p.audio[0])], [1500, 1500, 10000]);
+  p = P.removeAsset(p, 'm');
+  assert.equal(p.audio.length, 0);
+});
+
+test('captions: sorted, empty lines dropped, style y clamped', () => {
+  let p = P.addCue(P.addCue(base(), 3000, 'dos'), 1000, 'uno');
+  assert.deepEqual(p.captions.cues.map((c) => c.text), ['uno', 'dos']);
+  p = P.updateCue(p, p.captions.cues[0].id, { text: '   ' });
+  assert.deepEqual(p.captions.cues.map((c) => c.text), ['dos']);
+  assert.equal(P.cueAt(p, 3500)?.text, 'dos');
+  assert.equal(P.setCaptionStyle(p, { y: 2 }).captions.y, 0.95);
+});
+
+test('old projects are migrated', () => {
+  const old = { ...P.createProject('9:16') } as Partial<P.Project>;
+  delete old.texts; delete old.audio; delete old.captions;
+  const m = P.migrate(old as P.Project);
+  assert.deepEqual([m.texts, m.audio, m.captions.cues], [[], [], []]);
+});
+
+test('fade gain curve', async () => {
+  const { gainAt } = await import('./fades.ts');
+  const a = { id: 'x', assetId: 'm', startMs: 1000, inMs: 0, outMs: 5000, volume: 0.8, fadeInMs: 1000, fadeOutMs: 2000 };
+  assert.equal(gainAt(a, 500), 0);
+  assert.ok(Math.abs(gainAt(a, 1500) - 0.4) < 1e-9);
+  assert.equal(gainAt(a, 3000), 0.8);
+  assert.ok(Math.abs(gainAt(a, 5000) - 0.4) < 1e-9);
+  assert.equal(gainAt(a, 6000), 0);
+});

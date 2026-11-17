@@ -1,13 +1,17 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Scissors, Trash2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Scissors, Trash2, ZoomIn, ZoomOut, Maximize2, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
 import { useEditor } from '@/store/editor';
-import { starts, clipLength, duration, trim, moveClip, split, removeClip, type Clip } from '@/lib/project';
+import { starts, clipLength, duration, trim, moveClip, split, type Clip, moveSpan, updateText, updateAudio, updateCue, trimAudioStart, audioEnd, locate } from '@/lib/project';
+import { OverlayTrack } from './OverlayTrack';
+import { removeSelected } from './Editor';
 import { ClipBlock } from '@/components/ui/ClipBlock';
 import { IconButton } from '@/components/ui/Button';
 import { shortDuration } from '@/lib/time';
 
 const PAD = 12; // px before 0:00
+// decorative waveform (real per-file waveforms come later)
+const WAVE = Array.from({ length: 80 }, (_, i) => 0.25 + 0.6 * Math.abs(Math.sin(i * 0.7) * Math.cos(i * 0.23)));
 
 export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; onPause: () => void }) {
   const p = useEditor((s) => s.project)!;
@@ -57,7 +61,9 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
     <section aria-label="Línea de tiempo" className="flex h-[var(--timeline-default)] shrink-0 flex-col border-t border-border bg-surface">
       <div className="flex items-center gap-1 border-b border-border px-2 py-1">
         <IconButton label="Cortar en el cabezal (S)" onClick={() => { onPause(); const n = p.clips.length; apply((q) => split(q, playhead)); if (useEditor.getState().project!.clips.length > n) notify('Clip cortado', true); }} disabled={!p.clips.length}><Scissors size={16} /></IconButton>
-        <IconButton label="Borrar el clip seleccionado (Supr)" onClick={() => { if (selected) { apply((q) => removeClip(q, selected)); select(null); notify('Clip borrado', true); } }} disabled={!selected}><Trash2 size={16} /></IconButton>
+        <IconButton label="Recortar el inicio hasta el cabezal ([)" onClick={() => { const h = locate(p, playhead); if (h) { onPause(); apply((q) => trim(q, h.clip.id, 'start', h.sourceMs)); onSeek(h.startMs); } }} disabled={!p.clips.length}><ArrowLeftToLine size={16} /></IconButton>
+        <IconButton label="Recortar el final hasta el cabezal (])" onClick={() => { const h = locate(p, playhead); if (h) { onPause(); apply((q) => trim(q, h.clip.id, 'end', h.sourceMs)); } }} disabled={!p.clips.length}><ArrowRightToLine size={16} /></IconButton>
+        <IconButton label="Borrar lo seleccionado (Supr)" onClick={() => { if (selected) { apply((q) => removeSelected(q, selected)); select(null); notify('Borrado', true); } }} disabled={!selected}><Trash2 size={16} /></IconButton>
         <span className="mono ml-3 text-xs text-text-muted">{p.clips.length} clips · {shortDuration(total)}</span>
         <div className="ml-auto flex items-center gap-1">
           <IconButton label="Alejar (-)" onClick={() => setPps(pps / 1.25)}><ZoomOut size={16} /></IconButton>
@@ -65,7 +71,7 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
           <IconButton label="Ajustar a la ventana" onClick={() => total && setPps(((scroller.current!.clientWidth - PAD * 2 - 40) / total) * 1000)}><Maximize2 size={16} /></IconButton>
         </div>
       </div>
-      <div ref={scroller} className="relative min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
+      <div ref={scroller} className="relative min-h-0 flex-1 overflow-auto">
         <div className="relative h-full" style={{ width }}>
           <div className="relative h-6 cursor-pointer border-b border-border" onPointerDown={scrub} aria-label="Regla de tiempo: pulsa o arrastra para mover el cabezal" role="presentation">
             {Array.from({ length: Math.ceil((width - PAD) / pps / step) + 1 }, (_, k) => k * step).map((s) => (
@@ -97,6 +103,26 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
               );
             })}
             {dropX !== null && <div className="absolute -top-1 bottom-[-4px] z-30 w-0.5 bg-snap-guide" style={{ left: dropX }} aria-hidden />}
+          </div>
+          <div className="mt-1">
+            <OverlayTrack kind="text" name="Texto" height={32} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
+              items={p.texts.map((t) => ({ id: t.id, startMs: t.startMs, endMs: t.endMs, label: t.text.split('\n')[0] || '(vacío)' }))}
+              onDrag={(id, mode, d, key) => { const t = p.texts.find((q) => q.id === id)!; apply((q) => updateText(q, id, moveSpan(q.fps, t, mode, (mode === 'end' ? t.endMs : t.startMs) + d)), key); }}
+              onKeyMove={(id, d) => { const t = p.texts.find((q) => q.id === id)!; apply((q) => updateText(q, id, moveSpan(q.fps, t, 'move', t.startMs + d))); }} />
+            <OverlayTrack kind="caption" name="Subtítulos" height={32} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
+              items={p.captions.cues.map((c) => ({ id: c.id, startMs: c.startMs, endMs: c.endMs, label: c.text }))}
+              onDrag={(id, mode, d, key) => { const c = p.captions.cues.find((q) => q.id === id)!; apply((q) => updateCue(q, id, moveSpan(q.fps, c, mode, (mode === 'end' ? c.endMs : c.startMs) + d)), key); }}
+              onKeyMove={(id, d) => { const c = p.captions.cues.find((q) => q.id === id)!; apply((q) => updateCue(q, id, moveSpan(q.fps, c, 'move', c.startMs + d))); }} />
+            <OverlayTrack kind="audio" name="Audio" height={40} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
+              items={p.audio.map((a) => ({ id: a.id, startMs: a.startMs, endMs: audioEnd(a), label: p.assets.find((q) => q.id === a.assetId)?.name ?? 'Audio' }))}
+              extra={(it) => { const a = p.audio.find((q) => q.id === it.id)!; return { wave: WAVE, fadeIn: (a.fadeInMs / 1000) * pps, fadeOut: (a.fadeOutMs / 1000) * pps, muted: a.volume === 0 }; }}
+              onDrag={(id, mode, d, key) => {
+                const a = p.audio.find((q) => q.id === id)!;
+                if (mode === 'move') apply((q) => updateAudio(q, id, { startMs: a.startMs + d }), key);
+                else if (mode === 'start') apply((q) => trimAudioStart(q, id, a.startMs + d), key);
+                else apply((q) => updateAudio(q, id, { outMs: a.outMs + d }), key);
+              }}
+              onKeyMove={(id, d) => { const a = p.audio.find((q) => q.id === id)!; apply((q) => updateAudio(q, id, { startMs: a.startMs + d })); }} />
           </div>
           <div className="pointer-events-none absolute inset-y-0 z-30 w-[var(--playhead-width)] bg-playhead" style={{ left: x(playhead) }} aria-hidden>
             <div className="absolute -left-[5px] top-0 h-3 w-3 rotate-45 bg-playhead" />

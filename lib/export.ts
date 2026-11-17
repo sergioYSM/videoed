@@ -2,9 +2,11 @@
 // Render the project to an MP4 in the browser: H.264 High + AAC (WASM fallback).
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, QUALITY_MEDIUM, canEncodeAudio, canEncodeVideo } from 'mediabunny';
 import { registerAacEncoder } from '@mediabunny/aac-encoder';
-import { type Project, starts, clipLength, duration } from './project';
+import { type Project, starts, clipLength, duration, audioEnd } from './project';
+import { scheduleGain } from './fades';
 import { getSource } from './sources';
 import { drawFrame } from './compositor';
+import { drawOverlays, ensureFonts } from './overlays';
 
 export interface ExportOptions { height: 720 | 1080; quality: 'standard' | 'high' }
 export class ExportCancelled extends Error {}
@@ -27,6 +29,7 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
   const total = duration(p);
   if (!total) throw new Error('El proyecto está vacío.');
   if (!(await canEncodeAudio('aac'))) registerAacEncoder();
+  await ensureFonts(p);
   const { width: W, height: H } = outputSize(p, opt.height);
   const fps = p.fps, frameMs = 1000 / fps;
   const canvas = new OffscreenCanvas(W, H); const ctx = canvas.getContext('2d')!;
@@ -49,7 +52,7 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
     const times: number[] = [];
     for (let k = f; k < clipEndFrame; k++) times.push((c.inMs + (k * frameMs - st[i])) / 1000);
     if (src.image) {
-      for (const _ of times) { check(); drawFrame(ctx, W, H, src.image, c.fit); await vs.add(f * frameMs / 1000, frameMs / 1000); f++; onProgress((f / totalFrames) * 0.85); }
+      for (const _ of times) { check(); drawFrame(ctx, W, H, src.image, c.fit); drawOverlays(ctx, W, H, p, f * frameMs); await vs.add(f * frameMs / 1000, frameMs / 1000); f++; onProgress((f / totalFrames) * 0.85); }
       continue;
     }
     let last: HTMLCanvasElement | OffscreenCanvas | null = null;
@@ -57,6 +60,7 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
       check();
       if (w) last = w.canvas;
       drawFrame(ctx, W, H, last as never, c.fit);
+      drawOverlays(ctx, W, H, p, f * frameMs);
       await vs.add(f * frameMs / 1000, frameMs / 1000); f++;
       onProgress((f / totalFrames) * 0.85);
     }
@@ -78,6 +82,22 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
       const offset = Math.max(0, -at, c.inMs / 1000 - timestamp);
       n.start(Math.max(0, at), offset);
       n.stop((st[i] + clipLength(c)) / 1000);
+    }
+  }
+  for (const a of p.audio) {
+    const end = Math.min(audioEnd(a), total);
+    const asset = p.assets.find((x) => x.id === a.assetId);
+    if (end <= a.startMs || a.volume === 0 || !asset) continue;
+    const src = await getSource(projectId, asset);
+    if (!src.audioSink) continue;
+    const g = mix.createGain(); g.connect(mix.destination);
+    scheduleGain(g.gain, a, 0, 0);
+    for await (const { buffer, timestamp } of src.audioSink.buffers(a.inMs / 1000, (a.inMs + end - a.startMs) / 1000)) {
+      check();
+      const n = mix.createBufferSource(); n.buffer = buffer; n.connect(g);
+      const at = (a.startMs + (timestamp * 1000 - a.inMs)) / 1000;
+      n.start(Math.max(0, at), Math.max(0, -at, a.inMs / 1000 - timestamp));
+      n.stop(end / 1000);
     }
   }
   onProgress(0.9);
