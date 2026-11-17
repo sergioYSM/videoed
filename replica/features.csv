@@ -1,0 +1,46 @@
+feature,area,priority,original,clone,notes
+New project with size picker (9:16 16:9 1:1),projects,must,yes,no,
+Projects list with reopen and autosave,projects,must,yes,no,
+Import video image and audio files (drag and drop),media,must,yes,no,
+Preview canvas with play pause scrub,editor,must,yes,no,frame-accurate
+Timeline with clips in order and a playhead,timeline,must,yes,no,
+Trim clip ends,timeline,must,yes,no,
+Split at playhead,timeline,must,yes,no,
+Delete and reorder clips,timeline,must,yes,no,
+Undo and redo,editor,must,yes,no,
+Add text layer with basic style,text,must,yes,no,
+Move and scale layers on the canvas,editor,must,yes,no,
+Auto-captions from speech,captions,must,yes,no,free plan limited in the original
+Edit caption lines and style,captions,must,yes,no,
+Add music track with trim volume and fade,audio,must,yes,no,
+Export MP4 1080p without watermark,export,must,yes,no,
+Keyboard shortcuts (space split delete undo),editor,must,yes,no,
+Multiple tracks (overlays picture in picture),timeline,should,yes,no,
+Snapping on timeline and canvas,timeline,should,yes,no,
+Timeline zoom,timeline,should,yes,no,
+Clip speed,editor,should,yes,no,
+Mute or detach original audio,audio,should,yes,no,
+Crop and fit or fill frame,editor,should,yes,no,
+Fade in out and simple transitions,editor,should,yes,no,
+Text animations (in out),text,should,yes,no,
+Caption style presets (word highlight),captions,should,yes,no,
+Export 4K and 60fps,export,should,yes,no,Pro in the original
+Music library (CC licensed),audio,should,yes,no,from Clipsong
+Mobile layout,platform,should,yes,no,
+Accounts and cloud backup of projects,projects,should,yes,no,
+Templates,projects,could,yes,no,
+Background removal,editor,could,yes,no,
+Filters and colour adjust,editor,could,yes,no,
+Text to speech,audio,could,yes,no,
+Noise reduction,audio,could,yes,no,
+Stabilise,editor,could,yes,no,
+Keyframes,editor,could,yes,no,
+Team spaces and brand kit,team,could,yes,no,
+Direct publish to platforms,export,could,yes,no,
+CapCut stock music sounds stickers footage,assets,skip,yes,skip,licensed library; clone uses CC music and user files
+Template marketplace,assets,skip,yes,skip,their creators' network
+AI avatars,ai,skip,yes,skip,proprietary models and likeness rights
+Text to video generation,ai,skip,yes,skip,proprietary models
+Partner AI voices,ai,skip,yes,skip,partner licences
+Posting integration with TikTok,export,skip,yes,skip,parent-company platform deal
+CapCut effects and transitions as designed,assets,skip,yes,skip,their designs: build our own
