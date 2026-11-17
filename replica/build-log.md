@@ -31,3 +31,16 @@ Measured: 1 clip of 5 s exported at 720p in under 2 s (headless, software encode
 | S03 Mobile | 2026-11-17 | done | gestures (pinch zoom on timeline) | - |
 
 Tests: 15 unit, 10 e2e specs (desktop + Pixel 7), 30/30 over 3 repeats. Exports checked with ffprobe, pixels and audio levels.
+
+## Round 3: "things it doesn't let me do" (touch and browsers)
+
+| problem | fix | test |
+| --- | --- | --- |
+| On phones, "+" to add a clip again was hover-only | always visible on touch screens (hover:none) | touch.spec |
+| On phones, deleting a project was impossible (hover-only button) | visible on touch screens | touch.spec |
+| No way to remove an imported file | "Quitar del proyecto" on each media tile (removes its clips too) | touch.spec |
+| Finger drags on clips, trim handles, ruler and text were taken by the browser as scrolling | touch-action:none on draggable parts; bigger handles on touch | touch.spec (real touch events via DevTools protocol) |
+| Some Safari versions / private windows cannot write files to OPFS | automatic fallback to IndexedDB; clear message when storage is full or blocked | storage-fallback.spec (createWritable removed): import, reload, export |
+| On phones the toast covered the bottom tab bar | toast above the bar | by eye |
+
+Emulator quirk (not app code): after a simulated touch on a touch-action:none element, Chrome's emulator drops the click of the next tap (reproduced on a plain span). To confirm on a real phone.

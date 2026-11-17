@@ -61,7 +61,7 @@ export default function Projects() {
                       <div className="p-3"><p className="truncate font-semibold" title={p.name}>{p.name}</p>
                         <p className="text-sm text-text-muted"><span className="mono">{p.aspect}</span> · {p.clips.length} clips · {shortDuration(duration(p))} · {new Date(p.updatedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p></div>
                     </Link>
-                    <Button variant="ghost" size="sm" className="absolute right-2 top-2 bg-bg/70 opacity-0 focus:opacity-100 group-hover:opacity-100" aria-label={`Borrar ${p.name}`}
+                    <Button variant="ghost" size="sm" className="absolute right-2 top-2 bg-bg/70 opacity-0 focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100" aria-label={`Borrar ${p.name}`}
                       onClick={async () => { if (confirm(`¿Borrar «${p.name}» y sus vídeos de este navegador? No se puede deshacer.`)) { await deleteProject(p.id); refresh(); } }}><Trash2 size={14} /></Button>
                   </li>
                 );

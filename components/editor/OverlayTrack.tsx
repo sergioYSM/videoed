@@ -33,8 +33,8 @@ export function OverlayTrack({ kind, name, items, height, x, pps, selected, onSe
                 <ClipBlock id={`ov-${it.id}`} focusable kind={kind} label={it.label} left={left} width={w} selected={selected === it.id}
                   describe={`${name} «${it.label}», de ${shortDuration(it.startMs)} a ${shortDuration(it.endMs)}${selected === it.id ? ', seleccionado' : ''}. Alt+flechas para moverlo.`} {...extra?.(it)} />
                 {selected === it.id && <>
-                  <span aria-hidden onPointerDown={(e) => begin(e, it.id, 'start')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize" style={{ left: left - 2 }} />
-                  <span aria-hidden onPointerDown={(e) => begin(e, it.id, 'end')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize" style={{ left: left + w - 10 }} />
+                  <span aria-hidden onPointerDown={(e) => begin(e, it.id, 'start')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize touch-none [@media(hover:none)]:w-6" style={{ left: left - 2 }} />
+                  <span aria-hidden onPointerDown={(e) => begin(e, it.id, 'end')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize touch-none [@media(hover:none)]:w-6" style={{ left: left + w - 10 }} />
                 </>}
               </div>
             );

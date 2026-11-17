@@ -25,7 +25,7 @@ export function CanvasOverlay({ canvas }: { canvas: React.RefObject<HTMLCanvasEl
   const { apply, select, endCoalesce } = useEditor.getState();
 
   const drag = (e: React.PointerEvent, id: string, mode: 'move' | 'scale') => {
-    e.stopPropagation(); e.preventDefault(); select(id);
+    e.stopPropagation(); select(id);   // no preventDefault: on touch it swallows the click of the next tap (found in e2e)
     const t = p.texts.find((q) => q.id === id)!, x0 = e.clientX, y0 = e.clientY, key = `${mode}-${id}-${Date.now()}`;
     const b = textBox(ctx, W, H, t), half = Math.hypot(b.w, b.h) / 2 * k;
     const move = (ev: PointerEvent) => {
@@ -48,9 +48,9 @@ export function CanvasOverlay({ canvas }: { canvas: React.RefObject<HTMLCanvasEl
               const m = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[e.key];
               if (m) { e.preventDefault(); e.stopPropagation(); select(t.id); apply((q) => updateText(q, t.id, { x: t.x + m[0], y: t.y + m[1] }), `nudge-${t.id}`); }
             }}
-            className={`pointer-events-auto absolute cursor-move outline-none ${sel ? 'ring-2 ring-selection' : 'hover:ring-1 hover:ring-focus focus-visible:ring-2 focus-visible:ring-focus'}`}
+            className={`pointer-events-auto absolute cursor-move touch-none select-none outline-none ${sel ? 'ring-2 ring-selection' : 'hover:ring-1 hover:ring-focus focus-visible:ring-2 focus-visible:ring-focus'}`}
             style={{ left: ox + b.x * k, top: oy + b.y * k, width: b.w * k, height: b.h * k }}>
-            {sel && <span aria-hidden onPointerDown={(e) => drag(e, t.id, 'scale')} className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize rounded-full border-2 border-selection bg-text" />}
+            {sel && <span aria-hidden onPointerDown={(e) => drag(e, t.id, 'scale')} className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize touch-none rounded-full border-2 border-selection bg-text [@media(hover:none)]:-bottom-3 [@media(hover:none)]:-right-3 [@media(hover:none)]:h-6 [@media(hover:none)]:w-6" />}
           </div>
         );
       })}

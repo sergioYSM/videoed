@@ -101,7 +101,7 @@ export function Editor({ projectId }: { projectId: string }) {
         })}
       </nav>
       {exporting && <ExportDialog projectId={projectId} onClose={() => setExporting(false)} />}
-      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center">
+      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center max-md:bottom-[72px]">
         {toast && <div key={toast.id} className="pointer-events-auto flex items-center gap-4 rounded-md bg-text px-4 py-2 text-sm font-semibold text-bg shadow-pop">
           {toast.text}{toast.undo && <button type="button" className="underline" onClick={() => { useEditor.getState().undo(); useEditor.setState({ toast: null }); }}>Deshacer</button>}</div>}
       </div>

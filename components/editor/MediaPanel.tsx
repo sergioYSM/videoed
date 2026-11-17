@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Dropzone, type ImportRow } from '@/components/ui/Dropzone';
 import { MediaTile } from '@/components/ui/MediaTile';
 import { useEditor } from '@/store/editor';
-import { addAsset, addClip, addAudio } from '@/lib/project';
+import { addAsset, addClip, addAudio, removeAsset } from '@/lib/project';
+import { removeMedia } from '@/lib/storage';
 import { ImportError } from '@/lib/media';
 import { importOne } from '@/lib/importFile';
 
@@ -41,7 +42,10 @@ export function MediaPanel({ projectId }: { projectId: string }) {
               onKeyDown={(e) => { if (e.key === 'Enter') useEditor.getState().apply((q) => (a.kind === 'audio' ? addAudio(q, a.id, useEditor.getState().playhead) : addClip(q, a.id))); }}>
               <MediaTile name={a.name} kind={a.kind} durationMs={a.durationMs} thumb={a.thumb ? `center / cover no-repeat url(${a.thumb})` : undefined} used={p.clips.some((c) => c.assetId === a.id) || p.audio.some((c) => c.assetId === a.id)} selected={selected === a.id} />
               {a.kind !== 'audio' && <button type="button" onClick={(e) => { e.stopPropagation(); useEditor.getState().apply((q) => addClip(q, a.id)); }} aria-label={`Añadir ${a.name} al final`} title="Añadir al final"
-                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-on-accent opacity-0 focus:opacity-100 [div:hover>&]:opacity-100"><Plus size={14} /></button>}
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-on-accent opacity-0 focus:opacity-100 [@media(hover:none)]:opacity-100 [div:hover>&]:opacity-100"><Plus size={14} /></button>}
+              <button type="button" aria-label={`Quitar ${a.name} del proyecto`} title="Quitar del proyecto"
+                onClick={async (e) => { e.stopPropagation(); if (!confirm(`¿Quitar «${a.name}» del proyecto? También se quitarán sus clips de la línea de tiempo.`)) return; useEditor.getState().apply((q) => removeAsset(q, a.id)); await removeMedia(projectId, a.id); useEditor.getState().notify('Archivo quitado'); }}
+                className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-bg/80 text-text opacity-0 focus:opacity-100 [@media(hover:none)]:opacity-100 [div:hover>&]:opacity-100"><X size={14} /></button>
             </div>
           ))}
         </div>

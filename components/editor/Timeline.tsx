@@ -73,7 +73,7 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
       </div>
       <div ref={scroller} className="relative min-h-0 flex-1 overflow-auto">
         <div className="relative h-full" style={{ width }}>
-          <div className="relative h-6 cursor-pointer border-b border-border" onPointerDown={scrub} aria-label="Regla de tiempo: pulsa o arrastra para mover el cabezal" role="presentation">
+          <div className="relative h-6 cursor-pointer touch-none border-b border-border" onPointerDown={scrub} aria-label="Regla de tiempo: pulsa o arrastra para mover el cabezal" role="presentation">
             {Array.from({ length: Math.ceil((width - PAD) / pps / step) + 1 }, (_, k) => k * step).map((s) => (
               <span key={s} className="mono absolute top-0.5 select-none border-l border-border pl-1 text-2xs text-text-subtle" style={{ left: x(s * 1000) }}>{shortDuration(s * 1000)}</span>
             ))}
@@ -96,8 +96,8 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
                     thumbs={a?.thumb ? Array.from({ length: Math.max(1, Math.floor(w / 80)) }, () => `center / cover no-repeat url(${a.thumb})`) : undefined}
                     describe={`Clip ${label}, de ${shortDuration(st[i])} a ${shortDuration(st[i] + clipLength(c))}${selected === c.id ? ', seleccionado' : ''}`} />
                   {selected === c.id && <>
-                    <span aria-hidden onPointerDown={(e) => startTrim(e, c, 'start')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize" style={{ left: left - 2 }} data-trim="start" />
-                    <span aria-hidden onPointerDown={(e) => startTrim(e, c, 'end')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize" style={{ left: left + w - 10 }} data-trim="end" />
+                    <span aria-hidden onPointerDown={(e) => startTrim(e, c, 'start')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize touch-none [@media(hover:none)]:w-6" style={{ left: left - 2 }} data-trim="start" />
+                    <span aria-hidden onPointerDown={(e) => startTrim(e, c, 'end')} className="absolute top-1 z-20 h-[calc(100%-8px)] w-3 cursor-ew-resize touch-none [@media(hover:none)]:w-6" style={{ left: left + w - 10 }} data-trim="end" />
                   </>}
                 </div>
               );

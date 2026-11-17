@@ -7,7 +7,7 @@ export function ClipBlock({ kind, label, left, width, selected, muted, error, dr
 }) {
   return (
     <div role="option" id={id} aria-selected={!!selected} tabIndex={focusable ? 0 : selected ? 0 : -1} aria-label={describe}
-      className={`group absolute top-1 bottom-1 overflow-hidden rounded-sm ${bg[kind]} ${selected ? 'shadow-selected z-10' : ''} ${dragging ? 'opacity-90 shadow-pop' : ''} ${error ? 'outline outline-2 outline-danger' : ''} ${muted ? 'stripes' : ''}`}
+      className={`group absolute top-1 bottom-1 touch-none overflow-hidden rounded-sm ${bg[kind]} ${selected ? 'shadow-selected z-10' : ''} ${dragging ? 'opacity-90 shadow-pop' : ''} ${error ? 'outline outline-2 outline-danger' : ''} ${muted ? 'stripes' : ''}`}
       style={{ left, width }}>
       {thumbs && <div className="absolute inset-0 flex opacity-60" aria-hidden>{thumbs.map((t, i) => <div key={i} className="h-full flex-1 border-r border-bg/30" style={{ background: t }} />)}</div>}
       {wave && <svg className="absolute inset-x-0 bottom-0 h-3/4 w-full" viewBox={`0 0 ${wave.length} 20`} preserveAspectRatio="none" aria-hidden>
@@ -15,8 +15,8 @@ export function ClipBlock({ kind, label, left, width, selected, muted, error, dr
       {fadeIn > 0 && <svg className="absolute left-0 top-0 h-full" width={fadeIn} viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden><path d="M0 10 L10 0 L0 0Z" fill="var(--color-bg)" opacity=".45" /></svg>}
       {fadeOut > 0 && <svg className="absolute right-0 top-0 h-full" width={fadeOut} viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden><path d="M10 10 L0 0 L10 0Z" fill="var(--color-bg)" opacity=".45" /></svg>}
       <span className="relative block truncate px-2 pt-0.5 text-2xs font-semibold drop-shadow">{label}</span>
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-[var(--trim-handle)] cursor-ew-resize rounded-l-sm bg-text/80 ${selected ? 'block' : 'hidden group-hover:block'}`} />
-      <span aria-hidden className={`absolute inset-y-0 right-0 w-[var(--trim-handle)] cursor-ew-resize rounded-r-sm bg-text/80 ${selected ? 'block' : 'hidden group-hover:block'}`} />
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-[var(--trim-handle)] cursor-ew-resize rounded-l-sm bg-text/80 ${selected ? 'block' : 'hidden group-hover:block'} [@media(hover:none)]:w-5`} />
+      <span aria-hidden className={`absolute inset-y-0 right-0 w-[var(--trim-handle)] cursor-ew-resize rounded-r-sm bg-text/80 ${selected ? 'block' : 'hidden group-hover:block'} [@media(hover:none)]:w-5`} />
     </div>
   );
 }
