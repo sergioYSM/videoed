@@ -18,7 +18,7 @@ export function TopBar({ onExport }: { onExport: () => void }) {
         className="w-64 min-w-0 truncate rounded-sm max-md:w-auto max-md:flex-1 bg-transparent px-2 py-1 font-semibold hover:bg-surface-hover focus:bg-surface-raised focus:outline-none" />
       <span className="mono rounded-xs border border-border px-1.5 text-2xs text-text-muted max-sm:hidden">{p.aspect}</span>
       <span className="flex items-center gap-1 text-xs text-text-muted max-md:sr-only" role="status">
-        {save === 'saving' ? <><Loader2 size={12} className="animate-spin" aria-hidden />Guardando…</> : save === 'error' ? <span className="flex items-center gap-1 text-warning"><AlertTriangle size={12} aria-hidden />Sin guardar: el navegador no tiene espacio</span> : <><Check size={12} aria-hidden />Guardado en este navegador</>}
+        {save === 'saving' ? <><Loader2 size={12} className="animate-spin" aria-hidden />Guardando…</> : save === 'error' ? <span className="flex items-center gap-1 text-warning"><AlertTriangle size={12} aria-hidden />Sin guardar: el navegador no tiene espacio</span> : <><Check size={12} aria-hidden />Guardado en este dispositivo</>}
       </span>
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <IconButton label="Deshacer (Ctrl+Z)" onClick={undo} disabled={!canUndo}><Undo2 size={16} /></IconButton>

@@ -1,0 +1,6 @@
+{
+  "name": "Ownframe",
+  "avoid": ["CapCut", "Cap Cut", "ByteDance", "Bytedance"],
+  "domains": ["capcut.com", "capcut.net", "bytedance.com"],
+  "colors": []
+}

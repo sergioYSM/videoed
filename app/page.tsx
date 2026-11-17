@@ -20,16 +20,17 @@ export default function Projects() {
   const [usage, setUsage] = useState('');
   const refresh = () => listProjects().then(setList).catch(() => setList([]));
   useEffect(() => {
-    document.title = 'Proyectos · videoed';
+    document.title = 'Proyectos · Ownframe';
     refresh();
-    storageInfo().then((s) => setUsage(`${(s.usage / 1e6).toFixed(0)} MB usados en este navegador`)).catch(() => {});
+    storageInfo().then((s) => setUsage(`· ${(s.usage / 1e6).toFixed(0)} MB usados`)).catch(() => {});
   }, []);
   const create = async (a: Aspect) => { const p = createProject(a); await saveProject(p); router.push(`/editor/${p.id}`); };
 
   return (
     <main className="mx-auto max-w-[1100px] px-4 py-8">
+      <p className="mb-6 flex items-center gap-2 text-lg font-extrabold">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/icon.svg" alt="" width={28} height={28} />ownframe</p>
       <h1 className="text-2xl font-extrabold">Tus proyectos</h1>
-      <p className="mt-1 flex items-center gap-2 text-sm text-text-muted"><HardDrive size={14} aria-hidden /> Tus vídeos se guardan solo en este navegador. {usage}</p>
+      <p className="mt-1 flex items-center gap-2 text-sm text-text-muted"><HardDrive size={14} aria-hidden /> Tus vídeos no salen de este dispositivo. <span className="text-text-subtle">{usage}</span></p>
       <section aria-labelledby="new" className="mt-6">
         <h2 id="new" className="mb-3 text-lg font-semibold">Nuevo proyecto</h2>
         <div className="grid gap-3 sm:grid-cols-3">

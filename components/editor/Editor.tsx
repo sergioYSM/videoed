@@ -34,7 +34,7 @@ export function Editor({ projectId }: { projectId: string }) {
   const preview = useRef<PreviewHandle>(null);
   const name = useEditor((s) => s.project?.name);
   const toast = useEditor((s) => s.toast);
-  useEffect(() => { document.title = `${name ?? 'Proyecto'} · videoed`; }, [name]);
+  useEffect(() => { document.title = `${name ?? 'Proyecto'} · Ownframe`; }, [name]);
 
   // keyboard shortcuts (not while typing in a field)
   useEffect(() => {

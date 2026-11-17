@@ -69,7 +69,7 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
           </>
         ) : st.k === 'done' ? (
           <>
-            <p className="mb-1 font-semibold text-success">Listo</p>
+            <p className="mb-1 font-semibold text-success">Listo. Sin marca de agua.</p>
             <p className="mb-4 text-sm text-text-muted">{st.name} · {size.width}×{size.height} · {(st.size / 1e6).toFixed(1).replace('.', ',')} MB</p>
             <a href={st.url} download={st.name} className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent font-semibold text-on-accent hover:brightness-110">Descargar</a>
           </>

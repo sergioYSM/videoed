@@ -46,7 +46,7 @@ export const Preview = forwardRef<PreviewHandle, { projectId: string }>(function
         <canvas ref={canvas} width={W} height={H} className="max-h-full max-w-full bg-canvas-bg shadow-pop" style={{ aspectRatio: `${p.width} / ${p.height}` }}
           role="img" aria-label={p.clips.length ? 'Fotograma actual del vídeo' : 'Vista previa vacía'} />
         <CanvasOverlay canvas={canvas} />
-        {!p.clips.length && <p className="absolute text-center text-sm text-text-muted">Importa vídeos desde el panel <b>Medios</b> para empezar.</p>}
+        {!p.clips.length && <p className="absolute text-center text-sm text-text-muted">Importa vídeos desde <b>Medios</b> para empezar.</p>}
       </div>
       <Transport playing={playing} timeMs={playhead} durationMs={duration(p)} fps={p.fps} onToggle={api.toggle} onStep={(d) => { api.pause(); api.seek(playhead + (d * 1000) / p.fps); }} />
     </section>
