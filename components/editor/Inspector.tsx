@@ -94,7 +94,8 @@ function AudioSettings({ a }: { a: AudioItem }) {
       <NumberField label="Volumen" value={Math.round(a.volume * 100)} min={0} max={200} step={5} unit="%" onChange={(v) => up({ volume: v / 100 }, `av-${a.id}`)} />
       <NumberField label="Entrada" value={Math.round(a.fadeInMs / 100) / 10} min={0} max={Math.round(len / 100) / 10} step={0.1} unit="s" onChange={(v) => up({ fadeInMs: v * 1000 }, `fi-${a.id}`)} />
       <NumberField label="Salida" value={Math.round(a.fadeOutMs / 100) / 10} min={0} max={Math.round(len / 100) / 10} step={0.1} unit="s" onChange={(v) => up({ fadeOutMs: v * 1000 }, `fo-${a.id}`)} />
-      {a.credit && <div className="break-words rounded-md bg-surface-raised p-2 text-xs text-text-muted"><p className="mb-1 font-semibold text-text">Crédito (ponlo en la descripción)</p>{a.credit}</div>}
+      {a.credit && <div className="break-words rounded-md bg-surface-raised p-2 text-xs text-text-muted"><p className="mb-1 font-semibold text-text">Crédito (ponlo en la descripción)</p><p className="whitespace-pre-line">{a.credit}</p>
+        <button type="button" onClick={() => navigator.clipboard.writeText(a.credit!).then(() => useEditor.getState().notify('Crédito copiado'), () => useEditor.getState().notify('No se ha podido copiar'))} className="mt-2 rounded-sm bg-surface-active px-2 py-1 font-semibold text-text hover:brightness-110">Copiar crédito</button></div>}
     </div>
   );
 }

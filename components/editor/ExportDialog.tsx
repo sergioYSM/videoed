@@ -17,6 +17,7 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
   const abort = useRef<AbortController | null>(null);
   const first = useRef<HTMLButtonElement>(null);
   const fileName = `${p.name.replace(/[\\/:*?"<>|]+/g, '').trim() || 'video'}.mp4`;
+  const credits = [...new Set(p.audio.map((a) => a.credit).filter(Boolean))].join('\n\n');
   const size = outputSize(p, opt.height);
   useEffect(() => { canExport().then(setUnsupported); first.current?.focus(); }, []);
   // cancel only when the dialog closes (not on every state change)
@@ -72,6 +73,12 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
             <p className="mb-1 font-semibold text-success">Listo. Sin marca de agua.</p>
             <p className="mb-4 text-sm text-text-muted">{st.name} · {size.width}×{size.height} · {(st.size / 1e6).toFixed(1).replace('.', ',')} MB</p>
             <a href={st.url} download={st.name} className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent font-semibold text-on-accent hover:brightness-110">Descargar</a>
+            {credits && <div className="mt-4 rounded-md bg-surface p-3 text-sm">
+              <p className="mb-1 font-semibold">Pon esto en la descripción de tu vídeo</p>
+              <p className="mb-2 text-xs text-text-muted">La licencia de la música pide citar al autor.</p>
+              <pre className="mb-2 whitespace-pre-wrap break-words font-mono text-xs text-text-muted">{credits}</pre>
+              <Button size="sm" onClick={() => navigator.clipboard.writeText(credits).then(() => useEditor.getState().notify('Créditos copiados'), () => useEditor.getState().notify('No se ha podido copiar'))}>Copiar créditos de la música</Button>
+            </div>}
           </>
         ) : (
           <div role="alert"><p className="mb-1 font-semibold text-danger">No se ha podido exportar</p><p className="mb-4 text-sm text-text-muted">{st.msg}</p><Button onClick={() => setSt({ k: 'settings' })}>Volver</Button></div>

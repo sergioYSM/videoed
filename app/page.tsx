@@ -62,7 +62,7 @@ export default function Landing() {
               <Feature Icon={Captions} title="Subtítulos automáticos sin límite">Se generan en tu dispositivo. Como no nos cuestan nada, no te ponemos un tope al mes.</Feature>
               <Feature Icon={ShieldCheck} title="Lo gratis sigue gratis">Por escrito: si cambiamos algo del plan gratuito, lo anunciamos con 60 días y no afecta a tus proyectos.</Feature>
               <Feature Icon={BadgeCheck} title="Sin marca de agua, nunca">En ningún plan. Lo que exportas es tuyo, tal cual.</Feature>
-              <Feature Icon={Music} title="Música con licencia clara">Canciones de Clipsong con su licencia a la vista y el crédito listo para tu descripción.</Feature>
+              <Feature Icon={Music} title="Música con licencia clara">Canciones de Kevin MacLeod con licencia CC BY 4.0, aptas para vídeos monetizados. El crédito exacto, listo para copiar al exportar.</Feature>
               <Feature Icon={Smartphone} title="En el móvil y en el ordenador">Funciona en el navegador, sin instalar nada.</Feature>
             </div>
           </div>

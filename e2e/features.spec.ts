@@ -88,7 +88,7 @@ test('captions: import .srt, style, download .srt, captions burned into the expo
 test('music: added on a silent clip, faded in, mixed into the export', async ({ page }, info) => {
   const errors = await setup(page, ['mute-6s.mp4']);
   await tab(page, 'Audio');
-  await page.getByRole('button', { name: 'Añadir Valle abierto en el cabezal' }).click();
+  await page.getByRole('button', { name: 'Añadir Easy Lemon en el cabezal' }).click();
   await expect(page.getByRole('listbox', { name: 'Pista de audio' }).getByRole('option')).toHaveCount(1);
   await expect(page.getByText(/Crédito \(ponlo en la descripción\)/)).toBeVisible();
   const fadeIn = page.getByRole('textbox', { name: 'Entrada' });
@@ -123,4 +123,27 @@ test('auto captions: a failed model download is explained (model host blocked he
   page.on('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Generar desde la voz' }).click();
   await expect(page.getByRole('tabpanel').getByRole('alert')).toContainText(/No se ha podido (descargar el modelo|generar)/, { timeout: 60_000 });
+});
+
+test('licensed music: filter by mood, add, and the exact credit is offered after export', async ({ page, context }, info) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const errors = await setup(page, ['mute-6s.mp4']);
+  await tab(page, 'Audio');
+  const list = page.getByRole('list', { name: 'Música con licencia' }).getByRole('listitem');
+  await expect(list).toHaveCount(12);
+  await page.getByRole('group', { name: 'Filtrar por ánimo' }).getByRole('button', { name: 'Misteriosa' }).click();
+  await expect(list).toHaveCount(2);                                   // Sneaky Snitch, Investigations
+  await page.getByRole('button', { name: 'Añadir Investigations en el cabezal' }).click();
+  await expect(page.getByRole('listbox', { name: 'Pista de audio' }).getByRole('option')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  const d = page.getByRole('dialog', { name: 'Exportar vídeo' });
+  await d.getByRole('radio', { name: /720p/ }).click(); await d.getByRole('button', { name: 'Exportar', exact: true }).click();
+  await expect(d.getByText(/Listo/)).toBeVisible({ timeout: 60_000 });
+  const credit = '"Investigations"\nKevin MacLeod (incompetech.com)\nLicensed under Creative Commons: By Attribution 4.0\nhttp://creativecommons.org/licenses/by/4.0/';
+  await d.getByRole('button', { name: 'Copiar créditos de la música' }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(credit);
+  const dl = page.waitForEvent('download'); await d.getByRole('link', { name: 'Descargar' }).click();
+  const file = info.outputPath('km.mp4'); await (await dl).saveAs(file);
+  expect(meanVolume(file, 1, 3), 'the song is in the export').toBeGreaterThan(-35);
+  expect(errors).toEqual([]);
 });

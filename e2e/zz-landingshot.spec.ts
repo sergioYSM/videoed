@@ -9,7 +9,7 @@ test('landing screenshot from the real editor + landing checks', async ({ page }
   await expect(page.getByRole('listbox', { name: 'Pista de vídeo' }).getByRole('option')).toHaveCount(1);
   await page.getByRole('tab', { name: 'Texto' }).click(); await page.getByRole('button', { name: /Añadir título/ }).click();
   await page.getByRole('textbox', { name: 'Texto', exact: true }).fill('Mañana de rodaje');
-  await page.getByRole('tab', { name: 'Audio' }).click(); await page.getByRole('button', { name: 'Añadir Valle abierto en el cabezal' }).click();
+  await page.getByRole('tab', { name: 'Audio' }).click(); await page.getByRole('button', { name: 'Añadir Easy Lemon en el cabezal' }).click();
   await page.getByRole('tab', { name: 'Subtítulos' }).click();
   ch = page.waitForEvent('filechooser'); await page.getByRole('button', { name: 'Importar .srt' }).click(); await (await ch).setFiles(media('demo.srt'));
   await page.getByRole('radio', { name: 'Con caja' }).click();

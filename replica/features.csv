@@ -25,7 +25,7 @@ Fade in out and simple transitions,editor,should,yes,no,
 Text animations (in out),text,should,yes,no,
 Caption style presets (word highlight),captions,should,yes,no,
 Export 4K and 60fps,export,should,yes,no,Pro in the original
-Music library (CC licensed),audio,should,yes,partial,4 Clipsong demo tracks bundled with licence and credit; real catalogue needs Clipsong live
+Music library (CC licensed),audio,should,yes,yes,"12 songs by Kevin MacLeod, CC BY 4.0 (verified on incompetech.com), bundled; mood filter, search, exact credit copied at export"
 Mobile layout,platform,should,yes,yes,"bottom tabs + sheets under 768 px; Pixel 7 e2e imports, edits and exports"
 Accounts and cloud backup of projects,projects,should,yes,no,
 Templates,projects,could,yes,no,
