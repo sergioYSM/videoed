@@ -1,32 +1,32 @@
 feature,area,priority,original,clone,notes
-New project with size picker (9:16 16:9 1:1),projects,must,yes,no,
-Projects list with reopen and autosave,projects,must,yes,no,
-Import video image and audio files (drag and drop),media,must,yes,no,
-Preview canvas with play pause scrub,editor,must,yes,no,frame-accurate
-Timeline with clips in order and a playhead,timeline,must,yes,no,
-Trim clip ends,timeline,must,yes,no,
-Split at playhead,timeline,must,yes,no,
-Delete and reorder clips,timeline,must,yes,no,
-Undo and redo,editor,must,yes,no,
+New project with size picker (9:16 16:9 1:1),projects,must,yes,yes,1080x1920 / 1920x1080 / 1080x1080 at 30 fps
+Projects list with reopen and autosave,projects,must,yes,yes,IndexedDB; autosave 400 ms + on tab hide; e2e reload test
+Import video image and audio files (drag and drop),media,must,yes,yes,to OPFS (never uploaded); HEVC/unknown/broken explained; 4 GB cap; audio files stored but no audio track yet
+Preview canvas with play pause scrub,editor,must,yes,yes,audio-clock master; same draw function as export; e2e pixel checks
+Timeline with clips in order and a playhead,timeline,must,yes,yes,single magnetic main track
+Trim clip ends,timeline,must,yes,partial,drag handles on the selected clip; frame-snapped (unit tested); no keyboard trim; not covered by e2e yet
+Split at playhead,timeline,must,yes,yes,S key or scissors; e2e
+Delete and reorder clips,timeline,must,yes,yes,drag or Alt+arrows; e2e
+Undo and redo,editor,must,yes,yes,"200 steps, drags coalesced"
 Add text layer with basic style,text,must,yes,no,
 Move and scale layers on the canvas,editor,must,yes,no,
 Auto-captions from speech,captions,must,yes,no,free plan limited in the original
 Edit caption lines and style,captions,must,yes,no,
 Add music track with trim volume and fade,audio,must,yes,no,
-Export MP4 1080p without watermark,export,must,yes,no,
-Keyboard shortcuts (space split delete undo),editor,must,yes,no,
+Export MP4 1080p without watermark,export,must,yes,yes,H.264 High + AAC (WASM fallback); 720p/1080p; verified with ffprobe and pixel colours
+Keyboard shortcuts (space split delete undo),editor,must,yes,yes,"Space, S, Supr, Ctrl+Z/Y, arrows, +/-, Ctrl+E"
 Multiple tracks (overlays picture in picture),timeline,should,yes,no,
 Snapping on timeline and canvas,timeline,should,yes,no,
-Timeline zoom,timeline,should,yes,no,
+Timeline zoom,timeline,should,yes,yes,+/- and fit
 Clip speed,editor,should,yes,no,
 Mute or detach original audio,audio,should,yes,no,
-Crop and fit or fill frame,editor,should,yes,no,
+Crop and fit or fill frame,editor,should,yes,partial,fill/fit per clip; no free crop
 Fade in out and simple transitions,editor,should,yes,no,
 Text animations (in out),text,should,yes,no,
 Caption style presets (word highlight),captions,should,yes,no,
 Export 4K and 60fps,export,should,yes,no,Pro in the original
 Music library (CC licensed),audio,should,yes,no,from Clipsong
-Mobile layout,platform,should,yes,no,
+Mobile layout,platform,should,yes,no,panels hidden under 900px: importing is not possible on a phone yet
 Accounts and cloud backup of projects,projects,should,yes,no,
 Templates,projects,could,yes,no,
 Background removal,editor,could,yes,no,

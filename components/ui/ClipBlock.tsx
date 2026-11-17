@@ -1,12 +1,12 @@
 export type ClipKind = 'video' | 'text' | 'caption' | 'audio';
 const bg: Record<ClipKind, string> = { video: 'bg-track-video text-track-video-text', text: 'bg-track-text text-track-text-text', caption: 'bg-track-caption text-track-caption-text', audio: 'bg-track-audio text-track-audio-text' };
 /** A clip on the timeline. Positioned by the parent (left/width in px). */
-export function ClipBlock({ kind, label, left, width, selected, muted, error, dragging, wave, thumbs, fadeIn = 0, fadeOut = 0, describe }: {
+export function ClipBlock({ kind, label, left, width, selected, muted, error, dragging, wave, thumbs, fadeIn = 0, fadeOut = 0, describe, id, focusable }: {
   kind: ClipKind; label: string; left: number; width: number; selected?: boolean; muted?: boolean; error?: boolean; dragging?: boolean;
-  wave?: number[]; thumbs?: string[]; fadeIn?: number; fadeOut?: number; describe: string;
+  wave?: number[]; thumbs?: string[]; fadeIn?: number; fadeOut?: number; describe: string; id?: string; focusable?: boolean;
 }) {
   return (
-    <div role="option" aria-selected={!!selected} tabIndex={selected ? 0 : -1} aria-label={describe}
+    <div role="option" id={id} aria-selected={!!selected} tabIndex={focusable ? 0 : selected ? 0 : -1} aria-label={describe}
       className={`group absolute top-1 bottom-1 overflow-hidden rounded-sm ${bg[kind]} ${selected ? 'shadow-selected z-10' : ''} ${dragging ? 'opacity-90 shadow-pop' : ''} ${error ? 'outline outline-2 outline-danger' : ''} ${muted ? 'stripes' : ''}`}
       style={{ left, width }}>
       {thumbs && <div className="absolute inset-0 flex opacity-60" aria-hidden>{thumbs.map((t, i) => <div key={i} className="h-full flex-1 border-r border-bg/30" style={{ background: t }} />)}</div>}
