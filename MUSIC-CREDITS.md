@@ -17,3 +17,10 @@ Changes: re-encoded to 128 kbps MP3, metadata removed. No other changes.
 - "Easy Lemon" Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0. Source: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Easy%20Lemon.mp3
 - "Lobby Time" Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0. Source: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Lobby%20Time.mp3
 - "Funky Chunk" Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0. Source: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Funky%20Chunk.mp3
+
+## Full catalogue (not stored in this repository)
+The "Catálogo completo" tab lists every piece in incompetech's public index
+(https://incompetech.com/music/royalty-free/pieces.json, 1,443 pieces on 2026-11-17), all by
+Kevin MacLeod under CC BY 4.0. Files are served through `/api/music/file`, which only accepts
+names present in that index and caches each file for a year, so incompetech is asked as little
+as possible. The credit for every song is the same block as above with its own title.

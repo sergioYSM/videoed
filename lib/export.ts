@@ -1,7 +1,6 @@
 'use client';
 // Render the project to an MP4 in the browser: H.264 High + AAC (WASM fallback).
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, QUALITY_MEDIUM, canEncodeAudio, canEncodeVideo } from 'mediabunny';
-import { registerAacEncoder } from '@mediabunny/aac-encoder';
 import { type Project, starts, clipLength, duration, audioEnd } from './project';
 import { scheduleGain } from './fades';
 import { getSource } from './sources';
@@ -28,7 +27,8 @@ export function outputSize(p: Project, height: number) {
 export async function exportProject(p: Project, projectId: string, opt: ExportOptions, onProgress: (f: number) => void, signal: AbortSignal): Promise<Blob> {
   const total = duration(p);
   if (!total) throw new Error('El proyecto está vacío.');
-  if (!(await canEncodeAudio('aac'))) registerAacEncoder();
+  // WASM AAC encoder only where the browser has none; loaded on demand (keeps the editor light)
+  if (!(await canEncodeAudio('aac'))) (await import('@mediabunny/aac-encoder')).registerAacEncoder();
   await ensureFonts(p);
   const { width: W, height: H } = outputSize(p, opt.height);
   const fps = p.fps, frameMs = 1000 / fps;

@@ -23,4 +23,4 @@ export const MUSIC: MusicTrack[] = [
 ];
 export const MOODS = [...new Set(MUSIC.flatMap((m) => m.moods))].sort((a, b) => a.localeCompare(b, 'es'));
 /** Exactly the credit block incompetech's own generator produces for one title. */
-export const creditFor = (m: MusicTrack) => `"${m.title}"\nKevin MacLeod (incompetech.com)\nLicensed under Creative Commons: By Attribution 4.0\nhttp://creativecommons.org/licenses/by/4.0/`;
+export const creditFor = (m: { title: string }) => `"${m.title}"\nKevin MacLeod (incompetech.com)\nLicensed under Creative Commons: By Attribution 4.0\nhttp://creativecommons.org/licenses/by/4.0/`;

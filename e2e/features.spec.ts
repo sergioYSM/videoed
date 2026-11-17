@@ -147,3 +147,18 @@ test('licensed music: filter by mood, add, and the exact credit is offered after
   expect(meanVolume(file, 1, 3), 'the song is in the export').toBeGreaterThan(-35);
   expect(errors).toEqual([]);
 });
+
+test('full catalogue: search any of the 1,443 songs, add one, exact credit', async ({ page }) => {
+  const errors = await setup(page, ['mute-6s.mp4']);
+  await tab(page, 'Audio');
+  await page.getByRole('radio', { name: 'Catálogo completo' }).click();
+  await expect(page.getByText(/de 14\d\d canciones/)).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('textbox', { name: 'Buscar música' }).fill('pixel peeker');
+  await expect(page.getByRole('list', { name: 'Música con licencia' }).getByRole('listitem').first()).toContainText('Pixel Peeker Polka');
+  await page.getByRole('button', { name: /^Añadir Pixel Peeker Polka - faster en el cabezal$/ }).click();
+  await expect(page.getByRole('listbox', { name: 'Pista de audio' }).getByRole('option')).toHaveCount(1, { timeout: 30_000 });
+  await expect(page.getByText('"Pixel Peeker Polka - faster"')).toBeVisible();
+  const bad = await page.request.get('/api/music/file?name=..%2F..%2Fetc%2Fpasswd.mp3');
+  expect(bad.status(), 'not an open proxy').toBe(404);
+  expect(errors).toEqual([]);
+});
