@@ -22,7 +22,7 @@ export function OverlayTrack({ kind, name, items, height, x, pps, selected, onSe
   };
   return (
     <div className="relative border-b border-border" style={{ height }}>
-      <span className="pointer-events-none absolute left-1 top-0.5 z-0 text-2xs text-text-subtle">{name}</span>
+      {items.length === 0 && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-2xs text-text-subtle">{name}: vacía</span>}
       {items.length > 0 && (
         <div role="listbox" aria-label={`Pista de ${name.toLowerCase()}`} aria-orientation="horizontal" className="absolute inset-0">
           {items.map((it) => {

@@ -43,6 +43,7 @@ export function Editor({ projectId }: { projectId: string }) {
       if (el.closest('input, textarea, select, [contenteditable=true], [role=dialog], [role=slider]')) return;
       const s = useEditor.getState(); const p = s.project; if (!p) return;
       const frame = 1000 / p.fps;
+      if (e.key === 'Escape' && s.selected) { s.select(null); return; }
       if (e.code === 'Space') { e.preventDefault(); preview.current?.toggle(); }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); preview.current?.pause(); e.shiftKey ? s.redo() : s.undo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); s.redo(); }

@@ -12,7 +12,7 @@ export function TopBar({ onExport }: { onExport: () => void }) {
   const { apply, undo, redo } = useEditor.getState();
   return (
     <header className="flex h-topbar shrink-0 items-center gap-2 border-b border-border bg-surface px-2">
-      <Link href="/" aria-label="Volver a tus proyectos" title="Volver a tus proyectos" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-surface-hover hover:text-text"><ArrowLeft size={18} /></Link>
+      <Link href="/app" aria-label="Volver a tus proyectos" title="Volver a tus proyectos" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-surface-hover hover:text-text"><ArrowLeft size={18} /></Link>
       <label className="sr-only" htmlFor="pname">Nombre del proyecto</label>
       <input id="pname" defaultValue={p.name} key={p.id} maxLength={120} onBlur={(e) => apply((q) => rename(q, e.target.value))} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         className="w-64 min-w-0 truncate rounded-sm max-md:w-auto max-md:flex-1 bg-transparent px-2 py-1 font-semibold hover:bg-surface-hover focus:bg-surface-raised focus:outline-none" />

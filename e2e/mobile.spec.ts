@@ -7,7 +7,7 @@ test.use({ ...devices['Pixel 7'] });
 test('phone: import from the Medios sheet, add text, cut, export, no sideways scroll', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
+  await page.goto('/app');
   await page.getByRole('button', { name: /Vertical/ }).click();
   await expect(page.getByRole('navigation', { name: 'Paneles' })).toBeVisible();
   await page.getByRole('button', { name: 'Medios' }).click();

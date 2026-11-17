@@ -9,7 +9,7 @@ async function setup(page: Page, files: string[]) {
   const errors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/huggingface|Failed to load resource|ERR_/.test(m.text())) errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/'); await page.getByRole('button', { name: /Vertical/ }).click();
+  await page.goto('/app'); await page.getByRole('button', { name: /Vertical/ }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: /Importar vídeos/ }).click();
   await (await chooser).setFiles(files.map(media));

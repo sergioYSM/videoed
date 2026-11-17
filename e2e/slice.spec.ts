@@ -9,7 +9,7 @@ const errors: string[] = [];
 async function newVertical(page: Page) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
+  await page.goto('/app');
   await page.getByRole('button', { name: /Vertical/ }).click();
   await expect(page).toHaveURL(/\/editor\//);
   await expect(page.getByRole('region', { name: 'Vista previa' })).toBeVisible();

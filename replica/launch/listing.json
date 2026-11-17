@@ -1,0 +1,16 @@
+{
+  "avoid": ["CapCut", "Cap Cut", "ByteDance", "Bytedance"],
+  "app_store": {
+    "name": "Ownframe: Edit Video Privately",
+    "subtitle": "Your footage never leaves",
+    "promotional_text": "Captions, text and music for short videos, edited on your phone. Nothing is uploaded, and exports never carry a watermark.",
+    "description": "Ownframe is a video editor that works on your device.\n\nYour clips are never uploaded. Editing, automatic captions and export all happen on your phone or computer, and we ask for no licence over what you make.\n\nWhat you get, free:\n- Cut, trim and reorder clips on a timeline\n- Titles and labels with open fonts, moved with a finger\n- Automatic captions in Spanish, English and more, made on your device, with no monthly cap\n- A music track with fades, plus music with clear licences\n- Export to MP4 in 1080p for vertical, horizontal or square video\n- No watermark, ever\n\nWhat is free today stays free. If that ever changes, we announce it 60 days ahead and it never touches projects you already have.",
+    "keywords": "editor,captions,subtitles,reels,shorts,vertical,trim,clips,offline,montage,creator",
+    "whats_new": "First release."
+  },
+  "google_play": {
+    "title": "Ownframe: Edit Video Privately",
+    "short_description": "Edit short videos on your device. Nothing uploaded, no watermark.",
+    "full_description": "Ownframe is a video editor that works on your device.\n\nYour clips are never uploaded. Editing, automatic captions and export all happen on your phone, and we ask for no licence over what you make.\n\n- Cut, trim and reorder clips\n- Titles with open fonts\n- Automatic captions made on your device, no monthly cap\n- Music track with fades\n- 1080p MP4 export, no watermark, ever\n\nWhat is free today stays free."
+  }
+}
