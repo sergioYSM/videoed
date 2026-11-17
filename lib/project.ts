@@ -10,16 +10,32 @@ export interface AssetRef {
   id: string; name: string; kind: 'video' | 'audio' | 'image'; mime: string; size: number;
   durationMs: number; width?: number; height?: number; hasAudio: boolean; thumb?: string;
 }
-/** A clip on the main track. Main track is magnetic: clips play back to back, no gaps. */
-export interface Clip { id: string; assetId: string; inMs: number; outMs: number; fit: 'fill' | 'fit'; volume: number }
+export interface Adjust { brightness: number; contrast: number; saturation: number }   // 1 = unchanged
+export const NO_ADJUST: Adjust = { brightness: 1, contrast: 1, saturation: 1 };
+export const LOOKS: Record<string, { label: string; adjust: Adjust }> = {
+  original: { label: 'Original', adjust: NO_ADJUST },
+  vivo: { label: 'Vivo', adjust: { brightness: 1.05, contrast: 1.15, saturation: 1.35 } },
+  calido: { label: 'Cálido', adjust: { brightness: 1.05, contrast: 1.05, saturation: 1.15 } },
+  suave: { label: 'Suave', adjust: { brightness: 1.08, contrast: 0.9, saturation: 0.9 } },
+  bn: { label: 'Blanco y negro', adjust: { brightness: 1, contrast: 1.1, saturation: 0 } },
+  dramatico: { label: 'Dramático', adjust: { brightness: 0.92, contrast: 1.35, saturation: 0.85 } },
+};
+export const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
+/** A clip on the main track. Main track is magnetic: clips play back to back, no gaps.
+ *  inMs/outMs are in SOURCE time; the clip lasts (outMs - inMs) / speed on the timeline. */
+export interface Clip {
+  id: string; assetId: string; inMs: number; outMs: number; fit: 'fill' | 'fit'; volume: number;
+  speed?: number; fadeInMs?: number; fadeOutMs?: number; adjust?: Adjust; bg?: 'black' | 'blur';
+}
 export type FontId = 'Figtree' | 'Anton' | 'Montserrat' | 'Bebas Neue' | 'Permanent Marker';
 export const FONTS: FontId[] = ['Figtree', 'Anton', 'Montserrat', 'Bebas Neue', 'Permanent Marker'];
 export interface TextStyle { font: FontId; size: number /* px at 1920 tall */; color: string; stroke: string | null; bg: string | null; weight: 400 | 700 | 900; align: 'left' | 'center' | 'right' }
 /** Overlays live at absolute times (not magnetic). x, y = centre, as a fraction of the frame. */
-export interface TextItem { id: string; text: string; startMs: number; endMs: number; x: number; y: number; scale: number; style: TextStyle }
+export type TextAnim = 'none' | 'fade' | 'pop' | 'slide' | 'type';
+export interface TextItem { id: string; text: string; startMs: number; endMs: number; x: number; y: number; scale: number; style: TextStyle; anim?: TextAnim }
 export interface AudioItem { id: string; assetId: string; startMs: number; inMs: number; outMs: number; volume: number; fadeInMs: number; fadeOutMs: number; credit?: string }
 export interface Cue { id: string; startMs: number; endMs: number; text: string }
-export type CaptionPreset = 'clasico' | 'caja' | 'grande';
+export type CaptionPreset = 'clasico' | 'caja' | 'grande' | 'karaoke';
 export interface Captions { cues: Cue[]; preset: CaptionPreset; y: number; lang?: string }
 export interface Project {
   id: string; name: string; aspect: Aspect; width: number; height: number; fps: number;
@@ -44,7 +60,9 @@ export function migrate(p: Project): Project {
   return { ...p, texts: p.texts ?? [], audio: p.audio ?? [], captions: p.captions ?? { cues: [], preset: 'clasico', y: 0.8 } };
 }
 
-export const clipLength = (c: Clip) => c.outMs - c.inMs;
+export const speedOf = (c: Clip) => c.speed ?? 1;
+/** Length on the timeline (source length divided by speed), whole milliseconds. */
+export const clipLength = (c: Clip) => Math.round((c.outMs - c.inMs) / speedOf(c));
 /** The video ends with the main track; overlays past the end are cut at export. */
 export const duration = (p: Project) => p.clips.reduce((s, c) => s + clipLength(c), 0);
 /** Start time of each clip on the timeline. */
@@ -55,7 +73,7 @@ export function locate(p: Project, t: number): { index: number; clip: Clip; sour
   let s = 0;
   for (let i = 0; i < p.clips.length; i++) {
     const c = p.clips[i], len = clipLength(c);
-    if (t < s + len || (i === p.clips.length - 1 && t === s + len)) return { index: i, clip: c, sourceMs: c.inMs + Math.min(t - s, len), startMs: s };
+    if (t < s + len || (i === p.clips.length - 1 && t === s + len)) return { index: i, clip: c, sourceMs: c.inMs + Math.min(t - s, len) * speedOf(c), startMs: s };
     s += len;
   }
   return null;
@@ -112,9 +130,19 @@ export function moveClip(p: Project, from: number, to: number): Project {
   return touch(p, { clips });
 }
 
-export function setClip(p: Project, clipId: string, patch: Partial<Pick<Clip, 'fit' | 'volume'>>): Project {
-  return touch(p, { clips: p.clips.map((c) => (c.id === clipId ? { ...c, ...patch } : c)) });
+export function setClip(p: Project, clipId: string, patch: Partial<Pick<Clip, 'fit' | 'volume' | 'speed' | 'fadeInMs' | 'fadeOutMs' | 'adjust' | 'bg'>>): Project {
+  return touch(p, { clips: p.clips.map((c) => {
+    if (c.id !== clipId) return c;
+    const n = { ...c, ...patch };
+    if (n.speed !== undefined) n.speed = Math.min(4, Math.max(0.25, n.speed));
+    const len = clipLength(n);
+    n.fadeInMs = Math.min(len, Math.max(0, n.fadeInMs ?? 0)); n.fadeOutMs = Math.min(len - n.fadeInMs, Math.max(0, n.fadeOutMs ?? 0));
+    if (n.adjust) n.adjust = { brightness: clamp(n.adjust.brightness, 0, 2), contrast: clamp(n.adjust.contrast, 0, 2), saturation: clamp(n.adjust.saturation, 0, 3) };
+    return n;
+  }) });
 }
+const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+
 
 // ───────── text ─────────
 export const TEXT_PRESETS: Record<'titulo' | 'subtitulo' | 'etiqueta', Omit<TextItem, 'id' | 'startMs' | 'endMs'>> = {
@@ -199,3 +227,34 @@ export function setCaptionStyle(p: Project, patch: Partial<Pick<Captions, 'prese
   return touch(p, { captions: { ...p.captions, ...patch, y: Math.min(0.95, Math.max(0.05, patch.y ?? p.captions.y)) } });
 }
 export const cueAt = (p: Project, t: number) => p.captions.cues.find((c) => t >= c.startMs && t < c.endMs) ?? null;
+
+/** Duplicate a clip right after itself, a text or audio item right after its end. */
+export function duplicate(p: Project, id: string): Project {
+  const i = p.clips.findIndex((c) => c.id === id);
+  if (i >= 0) { const clips = [...p.clips]; clips.splice(i + 1, 0, { ...p.clips[i], id: uid() }); return touch(p, { clips }); }
+  const t = p.texts.find((x) => x.id === id);
+  if (t) { const len = t.endMs - t.startMs; return touch(p, { texts: [...p.texts, { ...structuredClone(t), id: uid(), startMs: t.endMs, endMs: t.endMs + len }] }); }
+  const a = p.audio.find((x) => x.id === id);
+  if (a) return touch(p, { audio: [...p.audio, { ...a, id: uid(), startMs: audioEnd(a) }] });
+  return p;
+}
+
+/** Move a clip's sound to the audio track (same timing) and mute the clip. Only at normal speed. */
+export function detachAudio(p: Project, clipId: string): Project {
+  const i = p.clips.findIndex((c) => c.id === clipId); if (i < 0) return p;
+  const c = p.clips[i], asset = p.assets.find((a) => a.id === c.assetId);
+  if (!asset?.hasAudio || speedOf(c) !== 1) return p;
+  const item: AudioItem = { id: uid(), assetId: c.assetId, startMs: starts(p)[i], inMs: c.inMs, outMs: c.outMs, volume: c.volume, fadeInMs: 0, fadeOutMs: 0 };
+  return touch(p, { clips: p.clips.map((x) => (x.id === clipId ? { ...x, volume: 0 } : x)), audio: [...p.audio, item] });
+}
+
+/** Snap a timeline time to the nearest edge (clips, overlays, extra points like the playhead) within `tol` ms. */
+export function snapTime(p: Project, t: number, tol: number, extra: number[] = [], ignoreId?: string): number {
+  const pts = [0, ...extra, ...starts(p).flatMap((s, i) => [s, s + clipLength(p.clips[i])]),
+    ...p.texts.filter((x) => x.id !== ignoreId).flatMap((x) => [x.startMs, x.endMs]),
+    ...p.audio.filter((x) => x.id !== ignoreId).flatMap((x) => [x.startMs, audioEnd(x)]),
+    ...p.captions.cues.filter((x) => x.id !== ignoreId).flatMap((x) => [x.startMs, x.endMs])];
+  let best = t, d = tol + 1;
+  for (const q of pts) { const dd = Math.abs(q - t); if (dd < d) { d = dd; best = q; } }
+  return d <= tol ? best : t;
+}

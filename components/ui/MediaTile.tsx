@@ -6,7 +6,7 @@ export function MediaTile({ name, kind, durationMs, thumb, state = 'ready', used
   const Icon = kind === 'video' ? Film : kind === 'audio' ? Music : ImageIcon;
   const label = `${name}, ${kind === 'video' ? 'vídeo' : kind === 'audio' ? 'audio' : 'imagen'}${durationMs ? `, ${shortDuration(durationMs)}` : ''}${state === 'error' ? ', error' : ''}`;
   return (
-    <div role="option" tabIndex={0} aria-label={label} aria-selected={!!selected}
+    <div role="group" tabIndex={0} aria-label={label}
       className={`group rounded-md p-1 outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-focus ${selected ? 'bg-surface-hover ring-2 ring-selection' : ''}`}>
       <div className="relative aspect-video overflow-hidden rounded-sm bg-surface-active" style={thumb ? { background: thumb } : undefined}>
         <Icon size={18} className="absolute left-1.5 top-1.5 text-text" aria-hidden />

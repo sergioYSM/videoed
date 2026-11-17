@@ -36,9 +36,9 @@ export function MediaPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-3 font-semibold">Medios</h2>
       <Dropzone onFiles={importFiles} rows={rows} compact={p.assets.length > 0} />
       {p.assets.length > 0 && (
-        <div role="listbox" aria-label="Medios del proyecto" className="mt-3 grid grid-cols-2 gap-1">
+        <div role="list" aria-label="Medios del proyecto" className="mt-3 grid grid-cols-2 gap-1">
           {p.assets.map((a) => (
-            <div key={a.id} className="relative" onClick={() => setSelected(a.id)} onDoubleClick={() => useEditor.getState().apply((q) => (a.kind === 'audio' ? addAudio(q, a.id, useEditor.getState().playhead) : addClip(q, a.id)))}
+            <div key={a.id} role="listitem" className="relative" onClick={() => setSelected(a.id)} onDoubleClick={() => useEditor.getState().apply((q) => (a.kind === 'audio' ? addAudio(q, a.id, useEditor.getState().playhead) : addClip(q, a.id)))}
               onKeyDown={(e) => { if (e.key === 'Enter') useEditor.getState().apply((q) => (a.kind === 'audio' ? addAudio(q, a.id, useEditor.getState().playhead) : addClip(q, a.id))); }}>
               <MediaTile name={a.name} kind={a.kind} durationMs={a.durationMs} thumb={a.thumb ? `center / cover no-repeat url(${a.thumb})` : undefined} used={p.clips.some((c) => c.assetId === a.id) || p.audio.some((c) => c.assetId === a.id)} selected={selected === a.id} />
               {a.kind !== 'audio' && <button type="button" onClick={(e) => { e.stopPropagation(); useEditor.getState().apply((q) => addClip(q, a.id)); }} aria-label={`Añadir ${a.name} al final`} title="Añadir al final"

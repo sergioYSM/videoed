@@ -132,3 +132,53 @@ test('fade gain curve', async () => {
   assert.ok(Math.abs(gainAt(a, 5000) - 0.4) < 1e-9);
   assert.equal(gainAt(a, 6000), 0);
 });
+
+test('speed: timeline length, locate and split account for it', () => {
+  let p = base(); const id = p.clips[0].id;           // 'a' 5000 ms
+  p = P.setClip(p, id, { speed: 2 });
+  assert.equal(P.clipLength(p.clips[0]), 2500);
+  assert.equal(P.duration(p), 5500);
+  assert.equal(P.locate(p, 1000)!.sourceMs, 2000);
+  p = P.split(p, 1000);
+  assert.deepEqual(p.clips.slice(0, 2).map((c) => [c.inMs, c.outMs, c.speed]), [[0, 2000, 2], [2000, 5000, 2]]);
+  assert.equal(P.duration(p), 5500, 'split keeps the length');
+  assert.equal(P.setClip(p, id, { speed: 99 }).clips[0].speed, 4);
+});
+
+test('clip fades clamp to the clip length; adjust clamps', () => {
+  let p = base(); const id = p.clips[1].id;           // 3000 ms
+  p = P.setClip(p, id, { fadeInMs: 2500, fadeOutMs: 2500, adjust: { brightness: 9, contrast: -1, saturation: 1 } });
+  assert.deepEqual([p.clips[1].fadeInMs, p.clips[1].fadeOutMs], [2500, 500]);
+  assert.deepEqual(p.clips[1].adjust, { brightness: 2, contrast: 0, saturation: 1 });
+});
+
+test('duplicate a clip, a text and an audio item', () => {
+  let p = P.addText(base(), 'titulo', 0);
+  p = P.duplicate(p, p.clips[0].id);
+  assert.deepEqual(p.clips.map((c) => c.assetId), ['a', 'a', 'b']);
+  assert.notEqual(p.clips[0].id, p.clips[1].id);
+  p = P.duplicate(p, p.texts[0].id);
+  assert.deepEqual(p.texts.map((t) => [t.startMs, t.endMs]), [[0, 3000], [3000, 6000]]);
+});
+
+test('detach audio: clip muted, same sound on the audio track at the same time', () => {
+  let p = base();
+  p = P.detachAudio(p, p.clips[1].id);
+  assert.equal(p.clips[1].volume, 0);
+  assert.deepEqual(p.audio.map((a) => [a.assetId, a.startMs, a.inMs, a.outMs]), [['b', 5000, 0, 3000]]);
+});
+
+test('snapping to clip edges and extra points within tolerance only', () => {
+  const p = base();
+  assert.equal(P.snapTime(p, 5080, 100), 5000);
+  assert.equal(P.snapTime(p, 5200, 100), 5200);
+  assert.equal(P.snapTime(p, 2950, 100, [3000]), 3000);
+});
+
+test('karaoke word timings cover the cue in order', async () => {
+  const { wordTimes } = await import('./overlays.ts');
+  const w = wordTimes('hola a todos', 1000, 3000);
+  assert.deepEqual(w.map((x) => x.w), ['hola', 'a', 'todos']);
+  assert.equal(w[0].t0, 1000); assert.ok(Math.abs(w[2].t1 - 3000) < 1e-6);
+  assert.ok(w[1].t1 - w[1].t0 < w[2].t1 - w[2].t0, 'longer words last longer');
+});

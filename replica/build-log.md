@@ -44,3 +44,12 @@ Tests: 15 unit, 10 e2e specs (desktop + Pixel 7), 30/30 over 3 repeats. Exports 
 | On phones the toast covered the bottom tab bar | toast above the bar | by eye |
 
 Emulator quirk (not app code): after a simulated touch on a touch-action:none element, Chrome's emulator drops the click of the next tap (reproduced on a plain span). To confirm on a real phone.
+
+## Round 4: more features
+
+Speed, clip fades, colour looks and sliders, blurred background, text animations, karaoke captions,
+duplicate (Ctrl+D), detach audio, timeline magnet, project files (.ownframe), automatic 720p retry,
+offline (service worker; editor moved to /edit?id= so one cached page serves every project).
+Found on the way: the media grid's listbox contained buttons (axe); offline export failed because
+the AAC fallback had never been downloaded online (now warmed in the background).
+Tests: 21 unit, 22 e2e (6 new, each checking the exported MP4 or the saved file).

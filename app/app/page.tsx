@@ -2,7 +2,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Smartphone, Monitor, Square, HardDrive } from 'lucide-react';
+import { Plus, Trash2, Smartphone, Monitor, Square, HardDrive, FolderOpen } from 'lucide-react';
+import { importProjectFile, ProjectFileError } from '@/lib/projectFile';
 import { createProject, duration, type Aspect, type Project } from '@/lib/project';
 import { deleteProject, listProjects, saveProject, storageInfo } from '@/lib/storage';
 import { shortDuration } from '@/lib/time';
@@ -18,13 +19,14 @@ export default function Projects() {
   const router = useRouter();
   const [list, setList] = useState<Project[] | null>(null);
   const [usage, setUsage] = useState('');
+  const [opening, setOpening] = useState(false);
   const refresh = () => listProjects().then(setList).catch(() => setList([]));
   useEffect(() => {
     document.title = 'Proyectos · Ownframe';
     refresh();
     storageInfo().then((s) => setUsage(`· ${(s.usage / 1e6).toFixed(0)} MB usados`)).catch(() => {});
   }, []);
-  const create = async (a: Aspect) => { const p = createProject(a); await saveProject(p); router.push(`/editor/${p.id}`); };
+  const create = async (a: Aspect) => { const p = createProject(a); await saveProject(p); router.push(`/edit?id=${p.id}`); };
 
   return (
     <main className="mx-auto max-w-[1100px] px-4 py-8">
@@ -44,7 +46,16 @@ export default function Projects() {
         </div>
       </section>
       <section aria-labelledby="recent" className="mt-8">
-        <h2 id="recent" className="mb-3 text-lg font-semibold">Recientes</h2>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 id="recent" className="text-lg font-semibold">Recientes</h2>
+          <Button size="sm" onClick={() => {
+            const i = document.createElement('input'); i.type = 'file'; i.accept = '.ownframe,application/zip';
+            i.onchange = async () => { const f = i.files?.[0]; if (!f) return; setOpening(true);
+              try { const np = await importProjectFile(f); router.push(`/edit?id=${np.id}`); }
+              catch (e) { alert(e instanceof ProjectFileError ? e.message : 'No se ha podido abrir el archivo.'); setOpening(false); } };
+            i.click();
+          }} loading={opening}><FolderOpen size={14} aria-hidden />Abrir archivo de proyecto</Button>
+        </div>
         {list === null ? <div className="grid gap-3 sm:grid-cols-3" aria-busy="true">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-40 rounded-lg" />)}</div>
           : list.length === 0 ? <p className="rounded-lg border border-dashed border-border p-8 text-center text-text-muted">Aún no tienes proyectos. Elige un formato arriba para empezar.</p>
           : (
@@ -53,7 +64,7 @@ export default function Projects() {
                 const thumb = p.assets.find((a) => a.id === p.clips[0]?.assetId)?.thumb;
                 return (
                   <li key={p.id} className="group relative overflow-hidden rounded-lg border border-border bg-surface hover:border-border-input">
-                    <Link href={`/editor/${p.id}`} className="block">
+                    <Link href={`/edit?id=${p.id}`} className="block">
                       <div className="flex h-32 items-center justify-center bg-canvas-bg">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {thumb ? <img src={thumb} alt="" className="h-full object-contain" /> : <span className="text-sm text-text-subtle">Sin clips</span>}

@@ -1,8 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Scissors, Trash2, ZoomIn, ZoomOut, Maximize2, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
+import { Scissors, Trash2, ZoomIn, ZoomOut, Maximize2, ArrowLeftToLine, ArrowRightToLine, Magnet } from 'lucide-react';
 import { useEditor } from '@/store/editor';
-import { starts, clipLength, duration, trim, moveClip, split, type Clip, moveSpan, updateText, updateAudio, updateCue, trimAudioStart, audioEnd, locate } from '@/lib/project';
+import { starts, clipLength, duration, trim, moveClip, split, type Clip, moveSpan, updateText, updateAudio, updateCue, trimAudioStart, audioEnd, locate, snapTime } from '@/lib/project';
 import { OverlayTrack } from './OverlayTrack';
 import { removeSelected } from './Editor';
 import { ClipBlock } from '@/components/ui/ClipBlock';
@@ -20,6 +20,9 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
   const scroller = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ from: number; to: number; dx: number } | null>(null);
   const total = duration(p), st = starts(p);
+  const [magnet, setMagnet] = useState(true);
+  /** Snap a dragged edge to clip/overlay edges and the playhead (8 px), unless the magnet is off or Alt is held. */
+  const sn = (ms: number, id: string) => (magnet ? snapTime(p, ms, (8 / pps) * 1000, [playhead], id) : ms);
   const x = (ms: number) => PAD + (ms / 1000) * pps;
   const msAt = (clientX: number) => { const r = scroller.current!.getBoundingClientRect(); return Math.max(0, ((clientX - r.left + scroller.current!.scrollLeft - PAD) / pps) * 1000); };
   const width = Math.max(x(total) + 200, 600);
@@ -66,6 +69,7 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
         <IconButton label="Borrar lo seleccionado (Supr)" onClick={() => { if (selected) { apply((q) => removeSelected(q, selected)); select(null); notify('Borrado', true); } }} disabled={!selected}><Trash2 size={16} /></IconButton>
         <span className="mono ml-3 text-xs text-text-muted">{p.clips.length} {p.clips.length === 1 ? 'clip' : 'clips'} · {shortDuration(total)}</span>
         <div className="ml-auto flex items-center gap-1">
+          <IconButton label={magnet ? 'Imán activado: los elementos se pegan a bordes y cabezal' : 'Imán desactivado'} active={magnet} onClick={() => setMagnet(!magnet)}><Magnet size={16} /></IconButton>
           <IconButton label="Alejar (-)" onClick={() => setPps(pps / 1.25)}><ZoomOut size={16} /></IconButton>
           <IconButton label="Acercar (+)" onClick={() => setPps(pps * 1.25)}><ZoomIn size={16} /></IconButton>
           <IconButton label="Ajustar a la ventana" onClick={() => total && setPps(((scroller.current!.clientWidth - PAD * 2 - 40) / total) * 1000)}><Maximize2 size={16} /></IconButton>
@@ -107,18 +111,18 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
           <div className="mt-1">
             <OverlayTrack kind="text" name="Texto" height={32} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
               items={p.texts.map((t) => ({ id: t.id, startMs: t.startMs, endMs: t.endMs, label: t.text.split('\n')[0] || '(vacío)' }))}
-              onDrag={(id, mode, d, key) => { const t = p.texts.find((q) => q.id === id)!; apply((q) => updateText(q, id, moveSpan(q.fps, t, mode, (mode === 'end' ? t.endMs : t.startMs) + d)), key); }}
+              onDrag={(id, mode, d, key) => { const t = p.texts.find((q) => q.id === id)!; apply((q) => updateText(q, id, moveSpan(q.fps, t, mode, sn((mode === 'end' ? t.endMs : t.startMs) + d, id))), key); }}
               onKeyMove={(id, d) => { const t = p.texts.find((q) => q.id === id)!; apply((q) => updateText(q, id, moveSpan(q.fps, t, 'move', t.startMs + d))); }} />
             <OverlayTrack kind="caption" name="Subtítulos" height={32} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
               items={p.captions.cues.map((c) => ({ id: c.id, startMs: c.startMs, endMs: c.endMs, label: c.text }))}
-              onDrag={(id, mode, d, key) => { const c = p.captions.cues.find((q) => q.id === id)!; apply((q) => updateCue(q, id, moveSpan(q.fps, c, mode, (mode === 'end' ? c.endMs : c.startMs) + d)), key); }}
+              onDrag={(id, mode, d, key) => { const c = p.captions.cues.find((q) => q.id === id)!; apply((q) => updateCue(q, id, moveSpan(q.fps, c, mode, sn((mode === 'end' ? c.endMs : c.startMs) + d, id))), key); }}
               onKeyMove={(id, d) => { const c = p.captions.cues.find((q) => q.id === id)!; apply((q) => updateCue(q, id, moveSpan(q.fps, c, 'move', c.startMs + d))); }} />
             <OverlayTrack kind="audio" name="Audio" height={40} x={x} pps={pps} selected={selected} onSelect={select} onDragEnd={endCoalesce}
               items={p.audio.map((a) => ({ id: a.id, startMs: a.startMs, endMs: audioEnd(a), label: p.assets.find((q) => q.id === a.assetId)?.name ?? 'Audio' }))}
               extra={(it) => { const a = p.audio.find((q) => q.id === it.id)!; return { wave: WAVE, fadeIn: (a.fadeInMs / 1000) * pps, fadeOut: (a.fadeOutMs / 1000) * pps, muted: a.volume === 0 }; }}
               onDrag={(id, mode, d, key) => {
                 const a = p.audio.find((q) => q.id === id)!;
-                if (mode === 'move') apply((q) => updateAudio(q, id, { startMs: a.startMs + d }), key);
+                if (mode === 'move') apply((q) => updateAudio(q, id, { startMs: sn(a.startMs + d, id) }), key);
                 else if (mode === 'start') apply((q) => trimAudioStart(q, id, a.startMs + d), key);
                 else apply((q) => updateAudio(q, id, { outMs: a.outMs + d }), key);
               }}

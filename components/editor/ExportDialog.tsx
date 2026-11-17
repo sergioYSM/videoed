@@ -25,6 +25,8 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
   const doneUrl = st.k === 'done' ? st.url : null;
   useEffect(() => () => { if (doneUrl) URL.revokeObjectURL(doneUrl); }, [doneUrl]);
 
+  const [retried, setRetried] = useState(false);
+  const exportProjectRetry = () => { setOpt({ ...opt, height: 720 }); return exportProject(p, projectId, { ...opt, height: 720 }, (f) => setSt({ k: 'running', f, t0: performance.now() }), abort.current!.signal); };
   const run = async () => {
     abort.current = new AbortController();
     const t0 = performance.now(); setSt({ k: 'running', f: 0, t0 });
@@ -32,6 +34,14 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
       const blob = await exportProject(p, projectId, opt, (f) => setSt({ k: 'running', f, t0 }), abort.current.signal);
       setSt({ k: 'done', url: URL.createObjectURL(blob), size: blob.size, name: fileName });
     } catch (e) {
+      if (!(e instanceof ExportCancelled) && opt.height === 1080) {
+        // fix X8: one automatic retry at 720p before giving up
+        try {
+          setSt({ k: 'running', f: 0, t0: performance.now() }); setRetried(true);
+          const blob = await exportProjectRetry();
+          setSt({ k: 'done', url: URL.createObjectURL(blob), size: blob.size, name: fileName }); return;
+        } catch (e2) { e = e2; }
+      }
       if (e instanceof ExportCancelled) setSt({ k: 'settings' });
       else setSt({ k: 'failed', msg: /memory|allocation/i.test(String(e)) ? 'Tu navegador se quedó sin memoria. Prueba a 720p o cierra otras pestañas.' : `No se ha podido exportar: ${(e as Error).message}` });
     }
@@ -63,6 +73,7 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
           </>
         ) : st.k === 'running' ? (
           <>
+            {retried && <p role="status" className="mb-2 text-sm text-warning">La exportación a 1080p falló; lo intentamos a 720p.</p>}
             <p className="mb-2 font-semibold">Exportando… {Math.round(st.f * 100)} %</p>
             <div role="progressbar" aria-label="Progreso de exportación" aria-valuenow={Math.round(st.f * 100)} aria-valuemin={0} aria-valuemax={100} className="h-2 rounded-full bg-surface-active"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${st.f * 100}%` }} /></div>
             <p className="mt-2 text-sm text-text-muted">{left !== null ? `Quedan unos ${Math.ceil(left)} s` : 'Preparando…'} · no cierres esta pestaña</p>
@@ -71,7 +82,7 @@ export function ExportDialog({ projectId, onClose }: { projectId: string; onClos
         ) : st.k === 'done' ? (
           <>
             <p className="mb-1 font-semibold text-success">Listo. Sin marca de agua.</p>
-            <p className="mb-4 text-sm text-text-muted">{st.name} · {size.width}×{size.height} · {(st.size / 1e6).toFixed(1).replace('.', ',')} MB</p>
+            <p className="mb-4 text-sm text-text-muted">{st.name} · {size.width}×{size.height} · {(st.size / 1e6).toFixed(1).replace('.', ',')} MB{retried ? ' · exportado a 720p porque 1080p falló' : ''}</p>
             <a href={st.url} download={st.name} className="inline-flex h-10 w-full items-center justify-center rounded-md bg-accent font-semibold text-on-accent hover:brightness-110">Descargar</a>
             {credits && <div className="mt-4 rounded-md bg-surface p-3 text-sm">
               <p className="mb-1 font-semibold">Pon esto en la descripción de tu vídeo</p>

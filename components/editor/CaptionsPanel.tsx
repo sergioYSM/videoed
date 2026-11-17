@@ -8,7 +8,7 @@ import { transcribe, MODEL_SIZE_MB } from '@/lib/transcribe';
 import { timecode } from '@/lib/time';
 import { Button, IconButton } from '@/components/ui/Button';
 
-const presets: { id: CaptionPreset; label: string }[] = [{ id: 'clasico', label: 'Clásico' }, { id: 'caja', label: 'Con caja' }, { id: 'grande', label: 'Grande' }];
+const presets: { id: CaptionPreset; label: string }[] = [{ id: 'clasico', label: 'Clásico' }, { id: 'caja', label: 'Con caja' }, { id: 'grande', label: 'Grande' }, { id: 'karaoke', label: 'Karaoke' }];
 
 export function CaptionsPanel({ projectId }: { projectId: string }) {
   const p = useEditor((s) => s.project)!;
@@ -64,7 +64,7 @@ export function CaptionsPanel({ projectId }: { projectId: string }) {
       </section>
 
       <fieldset className="mb-4"><legend className="mb-2 text-sm text-text-muted">Estilo</legend>
-        <div className="grid grid-cols-3 gap-1 rounded-md bg-surface-raised p-1" role="radiogroup" aria-label="Estilo de subtítulos">
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-raised p-1" role="radiogroup" aria-label="Estilo de subtítulos">
           {presets.map((x) => <button key={x.id} type="button" role="radio" aria-checked={p.captions.preset === x.id} onClick={() => apply((q) => setCaptionStyle(q, { preset: x.id }))}
             className={`rounded-sm py-1.5 text-sm ${p.captions.preset === x.id ? 'bg-surface-active text-text' : 'text-text-muted hover:text-text'}`}>{x.label}</button>)}
         </div>

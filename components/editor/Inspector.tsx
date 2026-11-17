@@ -1,7 +1,7 @@
 'use client';
 import { useId } from 'react';
 import { useEditor } from '@/store/editor';
-import { setClip, clipLength, updateText, updateAudio, updateCue, FONTS, type FontId, type TextItem, type AudioItem, type Cue, type Clip } from '@/lib/project';
+import { setClip, clipLength, updateText, updateAudio, updateCue, duplicate, detachAudio, speedOf, FONTS, SPEEDS, LOOKS, NO_ADJUST, type FontId, type TextItem, type AudioItem, type Cue, type Clip, type TextAnim } from '@/lib/project';
 import { NumberField } from '@/components/ui/NumberField';
 import { shortDuration, timecode } from '@/lib/time';
 
@@ -41,7 +41,38 @@ function ClipSettings({ c }: { c: Clip }) {
         </div>
         <p className="mt-1 text-xs text-text-subtle">{c.fit === 'fill' ? 'Ocupa todo el formato; recorta los bordes que sobran.' : 'Se ve entero; añade bandas negras.'}</p>
       </fieldset>
-      {a?.hasAudio && <div onPointerUp={end}><NumberField label="Volumen" value={Math.round(c.volume * 100)} min={0} max={200} step={5} unit="%" onChange={(v) => apply((q) => setClip(q, c.id, { volume: v / 100 }), `vol-${c.id}`)} /></div>}
+      {c.fit === 'fit' && <fieldset><legend className="mb-2 text-sm text-text-muted">Fondo</legend>
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-raised p-1" role="radiogroup" aria-label="Fondo">
+          {(['black', 'blur'] as const).map((b) => <button key={b} type="button" role="radio" aria-checked={(c.bg ?? 'black') === b} onClick={() => apply((q) => setClip(q, c.id, { bg: b }))}
+            className={`rounded-sm py-1.5 text-sm ${(c.bg ?? 'black') === b ? 'bg-surface-active text-text' : 'text-text-muted hover:text-text'}`}>{b === 'black' ? 'Negro' : 'Desenfocado'}</button>)}
+        </div></fieldset>}
+      <fieldset><legend className="mb-2 text-sm text-text-muted">Velocidad</legend>
+        <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Velocidad">
+          {SPEEDS.map((sp) => <button key={sp} type="button" role="radio" aria-checked={speedOf(c) === sp} onClick={() => apply((q) => setClip(q, c.id, { speed: sp }))}
+            className={`rounded-sm px-2 py-1 text-sm ${speedOf(c) === sp ? 'bg-accent text-on-accent' : 'bg-surface-raised text-text-muted hover:text-text'}`}>{String(sp).replace('.', ',')}×</button>)}
+        </div>
+        {speedOf(c) !== 1 && a?.hasAudio && <p className="mt-1 text-xs text-text-subtle">A otra velocidad el sonido también cambia de tono.</p>}
+      </fieldset>
+      <div onPointerUp={end} className="space-y-3">
+        {a?.hasAudio && <NumberField label="Volumen" value={Math.round(c.volume * 100)} min={0} max={200} step={5} unit="%" onChange={(v) => apply((q) => setClip(q, c.id, { volume: v / 100 }), `vol-${c.id}`)} />}
+        <NumberField label="Fundido entrada" value={Math.round((c.fadeInMs ?? 0) / 100) / 10} min={0} max={Math.round(clipLength(c) / 100) / 10} step={0.1} unit="s" onChange={(v) => apply((q) => setClip(q, c.id, { fadeInMs: v * 1000 }), `cfi-${c.id}`)} />
+        <NumberField label="Fundido salida" value={Math.round((c.fadeOutMs ?? 0) / 100) / 10} min={0} max={Math.round(clipLength(c) / 100) / 10} step={0.1} unit="s" onChange={(v) => apply((q) => setClip(q, c.id, { fadeOutMs: v * 1000 }), `cfo-${c.id}`)} />
+      </div>
+      <fieldset><legend className="mb-2 text-sm text-text-muted">Color</legend>
+        <div className="mb-2 flex flex-wrap gap-1" role="group" aria-label="Estilos de color">
+          {Object.entries(LOOKS).map(([k, l]) => <button key={k} type="button" onClick={() => apply((q) => setClip(q, c.id, { adjust: l.adjust }))}
+            className="rounded-full bg-surface-raised px-2.5 py-1 text-xs text-text-muted hover:text-text">{l.label}</button>)}
+        </div>
+        <div onPointerUp={end} className="space-y-2">
+          {(['brightness', 'contrast', 'saturation'] as const).map((k) => <NumberField key={k} label={{ brightness: 'Brillo', contrast: 'Contraste', saturation: 'Saturación' }[k]}
+            value={Math.round((c.adjust ?? NO_ADJUST)[k] * 100)} min={0} max={k === 'saturation' ? 300 : 200} step={5} unit="%"
+            onChange={(v) => apply((q) => setClip(q, c.id, { adjust: { ...(c.adjust ?? NO_ADJUST), [k]: v / 100 } }), `adj-${k}-${c.id}`)} />)}
+        </div>
+      </fieldset>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => { apply((q) => duplicate(q, c.id)); useEditor.getState().notify('Clip duplicado', true); }} className="rounded-sm bg-surface-raised px-2.5 py-1.5 text-sm hover:bg-surface-hover">Duplicar (Ctrl+D)</button>
+        {a?.hasAudio && speedOf(c) === 1 && c.volume > 0 && <button type="button" onClick={() => { apply((q) => detachAudio(q, c.id)); useEditor.getState().notify('Audio separado a la pista de audio', true); }} className="rounded-sm bg-surface-raised px-2.5 py-1.5 text-sm hover:bg-surface-hover">Separar audio</button>}
+      </div>
       <p className="text-xs text-text-subtle">Recorta con <b>[</b> y <b>]</b>: el inicio o el final del clip van al cabezal.</p>
     </div>
   );
@@ -80,6 +111,13 @@ function TextSettings({ t }: { t: TextItem }) {
       <NumberField label="Vertical" value={Math.round(t.y * 100)} min={0} max={100} step={1} unit="%" onChange={(v) => up({ y: v / 100 }, `y-${t.id}`)} />
       <NumberField label="Escala" value={Math.round(t.scale * 100)} min={10} max={800} step={5} unit="%" onChange={(v) => up({ scale: v / 100 }, `sc-${t.id}`)} />
       <NumberField label="Duración" value={Math.round((t.endMs - t.startMs) / 100) / 10} min={0.1} max={60} step={0.1} unit="s" onChange={(v) => up({ endMs: t.startMs + v * 1000 }, `dur-${t.id}`)} />
+      <fieldset><legend className="mb-1 text-sm text-text-muted">Animación</legend>
+        <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Animación">
+          {([['none', 'Ninguna'], ['fade', 'Aparecer'], ['pop', 'Saltar'], ['slide', 'Deslizar'], ['type', 'Máquina de escribir']] as [TextAnim, string][]).map(([k, l]) => (
+            <button key={k} type="button" role="radio" aria-checked={(t.anim ?? 'none') === k} onClick={() => up({ anim: k })}
+              className={`rounded-sm px-2 py-1 text-sm ${(t.anim ?? 'none') === k ? 'bg-accent text-on-accent' : 'bg-surface-raised text-text-muted hover:text-text'}`}>{l}</button>))}
+        </div></fieldset>
+      <button type="button" onClick={() => { apply((q) => duplicate(q, t.id)); useEditor.getState().notify('Texto duplicado', true); }} className="rounded-sm bg-surface-raised px-2.5 py-1.5 text-sm hover:bg-surface-hover">Duplicar (Ctrl+D)</button>
     </div>
   );
 }

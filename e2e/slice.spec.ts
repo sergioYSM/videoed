@@ -11,7 +11,7 @@ async function newVertical(page: Page) {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/app');
   await page.getByRole('button', { name: /Vertical/ }).click();
-  await expect(page).toHaveURL(/\/editor\//);
+  await expect(page).toHaveURL(/\/edit\?id=/);
   await expect(page.getByRole('region', { name: 'Vista previa' })).toBeVisible();
 }
 async function importFiles(page: Page, files: string[]) {

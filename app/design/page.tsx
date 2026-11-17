@@ -47,12 +47,12 @@ export default function DesignPage() {
             <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`rail-${tab}`} className="w-[300px] overflow-y-auto bg-surface p-3">
               <h3 className="mb-3 font-semibold">{{ media: 'Medios', text: 'Texto', captions: 'Subtítulos', audio: 'Audio' }[tab]}</h3>
               <Dropzone compact onFiles={() => {}} rows={[{ name: 'playa-amanecer.mp4', progress: 0.42 }, { name: 'iphone-hevc.mov', error: 'Este vídeo usa HEVC y tu navegador no puede leerlo. Prueba en Safari o graba en «Más compatible».' }]} />
-              <div role="listbox" aria-multiselectable="true" aria-label="Medios del proyecto" className="mt-3 grid grid-cols-2 gap-1">
-                <MediaTile name="playa-amanecer.mp4" kind="video" durationMs={12400} thumb="linear-gradient(135deg,#f59f00,#e8590c)" used />
-                <MediaTile name="entrevista-larga-con-un-nombre-muy-largo.mp4" kind="video" durationMs={184000} thumb="linear-gradient(135deg,#1971c2,#0b7285)" selected />
-                <MediaTile name="musica.mp3" kind="audio" durationMs={95000} />
-                <MediaTile name="logo.png" kind="image" state="importing" />
-                <MediaTile name="roto.mp4" kind="video" state="error" reason="Archivo dañado" />
+              <div role="list" aria-label="Medios del proyecto" className="mt-3 grid grid-cols-2 gap-1">
+                <div role="listitem"><MediaTile name="playa-amanecer.mp4" kind="video" durationMs={12400} thumb="linear-gradient(135deg,#f59f00,#e8590c)" used /></div>
+                <div role="listitem"><MediaTile name="entrevista-larga-con-un-nombre-muy-largo.mp4" kind="video" durationMs={184000} thumb="linear-gradient(135deg,#1971c2,#0b7285)" selected /></div>
+                <div role="listitem"><MediaTile name="musica.mp3" kind="audio" durationMs={95000} /></div>
+                <div role="listitem"><MediaTile name="logo.png" kind="image" state="importing" /></div>
+                <div role="listitem"><MediaTile name="roto.mp4" kind="video" state="error" reason="Archivo dañado" /></div>
               </div>
             </div>
           </div>

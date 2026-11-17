@@ -16,21 +16,21 @@ Add music track with trim volume and fade,audio,must,yes,yes,"audio track: move,
 Export MP4 1080p without watermark,export,must,yes,yes,H.264 High + AAC (WASM fallback); 720p/1080p; verified with ffprobe and pixel colours
 Keyboard shortcuts (space split delete undo),editor,must,yes,yes,"Space, S, Supr, Ctrl+Z/Y, arrows, +/-, Ctrl+E"
 Multiple tracks (overlays picture in picture),timeline,should,yes,no,
-Snapping on timeline and canvas,timeline,should,yes,no,
+Snapping on timeline and canvas,timeline,should,yes,partial,timeline: overlays snap to edges and playhead (magnet toggle); canvas: no snapping
 Timeline zoom,timeline,should,yes,yes,+/- and fit
-Clip speed,editor,should,yes,no,
-Mute or detach original audio,audio,should,yes,partial,clip volume 0-200 %; no detach
+Clip speed,editor,should,yes,yes,0.25x-4x; pitch changes with speed; e2e checks exported length
+Mute or detach original audio,audio,should,yes,yes,"volume 0-200% and ""Separar audio"" to the audio track"
 Crop and fit or fill frame,editor,should,yes,partial,fill/fit per clip; no free crop
-Fade in out and simple transitions,editor,should,yes,no,
-Text animations (in out),text,should,yes,no,
-Caption style presets (word highlight),captions,should,yes,no,
+Fade in out and simple transitions,editor,should,yes,yes,per-clip fade from/to black; e2e checks black first frames
+Text animations (in out),text,should,yes,yes,"fade, pop, slide, typewriter; e2e checks typewriter growth in export"
+Caption style presets (word highlight),captions,should,yes,yes,karaoke style: active word highlighted (word timings estimated from word length)
 Export 4K and 60fps,export,should,yes,no,Pro in the original
 Music library (CC licensed),audio,should,yes,yes,"12 featured songs bundled + full catalogue of 1,443 Kevin MacLeod songs (CC BY 4.0) via /api/music (catalogue-only, cached); mood filter, search, exact credit at export"
 Mobile layout,platform,should,yes,yes,"bottom tabs + sheets under 768 px; Pixel 7 e2e imports, edits and exports"
 Accounts and cloud backup of projects,projects,should,yes,no,
 Templates,projects,could,yes,no,
 Background removal,editor,could,yes,no,
-Filters and colour adjust,editor,could,yes,no,
+Filters and colour adjust,editor,could,yes,yes,brightness/contrast/saturation + 6 looks (Canvas filters: Safari draws unadjusted)
 Text to speech,audio,could,yes,no,
 Noise reduction,audio,could,yes,no,
 Stabilise,editor,could,yes,no,
@@ -50,5 +50,5 @@ Public free-features promise,fix,should,no,no,X3 -> replica-launch
 No watermark on any plan,fix,must,no,yes,X4 true today
 Cancel in two clicks and renewal reminder,fix,should,no,no,X5 -> replica-backend
 Project file export and import (.videoed),fix,should,no,no,X6
-Works offline after first visit (PWA),fix,should,no,no,X7
-Export failure falls back to 720p automatically,fix,could,no,no,X8
+Works offline after first visit (PWA),fix,should,no,yes,"service worker; e2e opens, edits and exports offline"
+Export failure falls back to 720p automatically,fix,could,no,yes,one automatic retry at 720p with a notice (not forced in tests)

@@ -2,10 +2,10 @@
 // Preview player. The audio clock (AudioContext) is the master; video frames
 // are pulled from per-clip iterators to match it. Paused seeks fetch one frame.
 import type { WrappedCanvas } from 'mediabunny';
-import { type Project, locate, starts, clipLength, duration, audioEnd } from './project';
+import { type Project, locate, starts, clipLength, duration, audioEnd, speedOf } from './project';
 import { scheduleGain } from './fades';
 import { getSource } from './sources';
-import { drawFrame } from './compositor';
+import { drawFrame, clipFade } from './compositor';
 import { drawOverlays, ensureFonts } from './overlays';
 
 export class Engine {
@@ -40,7 +40,7 @@ export class Engine {
     let img: CanvasImageSource & { width: number; height: number } | null = src.image ?? null;
     if (src.sink) img = (await src.sink.getCanvas(hit.sourceMs / 1000))?.canvas as HTMLCanvasElement ?? null;
     if (token !== this.seekToken || this.playing) return;
-    drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, img, hit.clip.fit);
+    drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, img, hit.clip.fit, hit.clip, clipFade(hit.clip, t - hit.startMs, clipLength(hit.clip)));
     drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t);
   }
 
@@ -84,7 +84,8 @@ export class Engine {
     const asset = this.p.assets.find((a) => a.id === hit.clip.assetId)!;
     const src = await getSource(this.projectId, asset);
     if (token !== this.runToken) return;
-    if (src.image) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, src.image, hit.clip.fit); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); return; }
+    const fade = clipFade(hit.clip, t - hit.startMs, clipLength(hit.clip));
+    if (src.image) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, src.image, hit.clip.fit, hit.clip, fade); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); return; }
     if (!src.sink) return;
     const s = hit.sourceMs / 1000;
     if (!this.iter || this.iter.clipId !== hit.clip.id) {
@@ -102,7 +103,7 @@ export class Engine {
     }
     if (shown) { this.last = shown.canvas as HTMLCanvasElement; }
     // redraw every tick so overlays appear/disappear on time even between video frames
-    if (this.last) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, this.last, hit.clip.fit); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); }
+    if (this.last) { drawFrame(this.ctx2d, this.canvas.width, this.canvas.height, this.last, hit.clip.fit, hit.clip, fade); drawOverlays(this.ctx2d, this.canvas.width, this.canvas.height, this.p, t); }
   }
 
   /** Audio track items (music, voice-overs): absolute times, volume and fades. */
@@ -141,14 +142,15 @@ export class Engine {
       if (!asset.hasAudio) continue;
       const src = await getSource(this.projectId, asset);
       if (!src.audioSink) continue;
-      const inS = (c.inMs + Math.max(0, from - s0)) / 1000, outS = c.outMs / 1000;
+      const sp = speedOf(c);
+      const inS = (c.inMs + Math.max(0, from - s0) * sp) / 1000, outS = c.outMs / 1000;
       for await (const { buffer, timestamp } of src.audioSink.buffers(inS, outS)) {
         if (token !== this.runToken || !this.audio || !this.gain) return;
-        const tl = s0 + (timestamp * 1000 - c.inMs);                // timeline ms of this buffer's start
+        const tl = s0 + (timestamp * 1000 - c.inMs) / sp;           // timeline ms of this buffer's start
         const when = this.startCtx + (tl - from) / 1000;
-        const n = this.audio.createBufferSource(); n.buffer = buffer;
+        const n = this.audio.createBufferSource(); n.buffer = buffer; n.playbackRate.value = sp;   // speed changes pitch too
         const g = this.audio.createGain(); g.gain.value = c.volume; n.connect(g).connect(this.gain);
-        const offset = Math.max(0, this.audio.currentTime - when, inS - timestamp);
+        const offset = Math.max(0, (this.audio.currentTime - when) * sp, inS - timestamp);
         const stopAt = this.startCtx + (s0 + len - from) / 1000;     // never past the clip's out point
         if (offset >= buffer.duration) continue;
         n.start(Math.max(when, this.audio.currentTime), offset);

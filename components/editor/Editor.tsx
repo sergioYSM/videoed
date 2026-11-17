@@ -10,7 +10,7 @@ import { Inspector } from './Inspector';
 import { ExportDialog } from './ExportDialog';
 import { InspectorBody } from './Inspector';
 import { Film, Type, Captions, Music, SlidersHorizontal, X } from 'lucide-react';
-import { split, removeClip, removeText, removeAudio, removeCue, duration, locate, trim } from '@/lib/project';
+import { split, removeClip, removeText, removeAudio, removeCue, duration, locate, trim, duplicate } from '@/lib/project';
 import { TextPanel } from './TextPanel';
 import { AudioPanel } from './AudioPanel';
 import { CaptionsPanel } from './CaptionsPanel';
@@ -35,6 +35,14 @@ export function Editor({ projectId }: { projectId: string }) {
   const name = useEditor((s) => s.project?.name);
   const toast = useEditor((s) => s.toast);
   useEffect(() => { document.title = `${name ?? 'Proyecto'} · Ownframe`; }, [name]);
+  // Warm the export pieces while online, so exporting also works offline later (the service worker keeps them).
+  useEffect(() => {
+    const id = setTimeout(async () => {
+      const { canEncodeAudio } = await import('mediabunny');
+      if (!(await canEncodeAudio('aac'))) await import('@mediabunny/aac-encoder').catch(() => {});
+    }, 1500);
+    return () => clearTimeout(id);
+  }, []);
 
   // keyboard shortcuts (not while typing in a field)
   useEffect(() => {
@@ -48,6 +56,7 @@ export function Editor({ projectId }: { projectId: string }) {
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); preview.current?.pause(); e.shiftKey ? s.redo() : s.undo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); s.redo(); }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') { e.preventDefault(); setExporting(true); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && s.selected) { e.preventDefault(); s.apply((q) => duplicate(q, s.selected!)); s.notify('Duplicado', true); }
       else if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); preview.current?.pause(); const before = p.clips.length; s.apply((q) => split(q, s.playhead)); if (useEditor.getState().project!.clips.length > before) s.notify('Clip cortado', true); }
       else if ((e.key === 'Delete' || e.key === 'Backspace') && s.selected) { e.preventDefault(); s.apply((q) => removeSelected(q, s.selected!)); s.select(null); s.notify('Borrado', true); }
       else if (e.key === '[' || e.key === ']') {

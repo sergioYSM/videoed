@@ -1,10 +1,10 @@
 'use client';
 // Render the project to an MP4 in the browser: H.264 High + AAC (WASM fallback).
 import { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, QUALITY_MEDIUM, canEncodeAudio, canEncodeVideo } from 'mediabunny';
-import { type Project, starts, clipLength, duration, audioEnd } from './project';
+import { type Project, starts, clipLength, duration, audioEnd, speedOf } from './project';
 import { scheduleGain } from './fades';
 import { getSource } from './sources';
-import { drawFrame } from './compositor';
+import { drawFrame, clipFade } from './compositor';
 import { drawOverlays, ensureFonts } from './overlays';
 
 export interface ExportOptions { height: 720 | 1080; quality: 'standard' | 'high' }
@@ -50,16 +50,17 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
     const src = await getSource(projectId, asset);
     const clipEndFrame = Math.round(((st[i] + clipLength(c)) * fps) / 1000);
     const times: number[] = [];
-    for (let k = f; k < clipEndFrame; k++) times.push((c.inMs + (k * frameMs - st[i])) / 1000);
+    const sp = speedOf(c), len = clipLength(c);
+    for (let k = f; k < clipEndFrame; k++) times.push((c.inMs + (k * frameMs - st[i]) * sp) / 1000);
     if (src.image) {
-      for (const _ of times) { check(); drawFrame(ctx, W, H, src.image, c.fit); drawOverlays(ctx, W, H, p, f * frameMs); await vs.add(f * frameMs / 1000, frameMs / 1000); f++; onProgress((f / totalFrames) * 0.85); }
+      for (const _ of times) { check(); drawFrame(ctx, W, H, src.image, c.fit, c, clipFade(c, f * frameMs - st[i], len)); drawOverlays(ctx, W, H, p, f * frameMs); await vs.add(f * frameMs / 1000, frameMs / 1000); f++; onProgress((f / totalFrames) * 0.85); }
       continue;
     }
     let last: HTMLCanvasElement | OffscreenCanvas | null = null;
     for await (const w of src.sink!.canvasesAtTimestamps(times)) {
       check();
       if (w) last = w.canvas;
-      drawFrame(ctx, W, H, last as never, c.fit);
+      drawFrame(ctx, W, H, last as never, c.fit, c, clipFade(c, f * frameMs - st[i], len));
       drawOverlays(ctx, W, H, p, f * frameMs);
       await vs.add(f * frameMs / 1000, frameMs / 1000); f++;
       onProgress((f / totalFrames) * 0.85);
@@ -74,12 +75,13 @@ export async function exportProject(p: Project, projectId: string, opt: ExportOp
     if (!asset.hasAudio || c.volume === 0) continue;
     const src = await getSource(projectId, asset);
     if (!src.audioSink) continue;
+    const sp = speedOf(c);
     for await (const { buffer, timestamp } of src.audioSink.buffers(c.inMs / 1000, c.outMs / 1000)) {
       check();
-      const n = mix.createBufferSource(); n.buffer = buffer;
+      const n = mix.createBufferSource(); n.buffer = buffer; n.playbackRate.value = sp;
       const g = mix.createGain(); g.gain.value = c.volume; n.connect(g).connect(mix.destination);
-      const at = (st[i] + (timestamp * 1000 - c.inMs)) / 1000;      // seconds on the timeline
-      const offset = Math.max(0, -at, c.inMs / 1000 - timestamp);
+      const at = (st[i] + (timestamp * 1000 - c.inMs) / sp) / 1000;  // seconds on the timeline
+      const offset = Math.max(0, -at * sp, c.inMs / 1000 - timestamp);
       n.start(Math.max(0, at), offset);
       n.stop((st[i] + clipLength(c)) / 1000);
     }
