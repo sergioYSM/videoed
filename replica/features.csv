@@ -44,3 +44,11 @@ Text to video generation,ai,skip,yes,skip,proprietary models
 Partner AI voices,ai,skip,yes,skip,partner licences
 Posting integration with TikTok,export,skip,yes,skip,parent-company platform deal
 CapCut effects and transitions as designed,assets,skip,yes,skip,their designs: build our own
+No upload: footage never leaves the device (shown in the UI),fix,must,no,yes,X1 already true; terms page pending
+Unlimited on-device auto-captions,fix,must,no,partial,X2 written; not run end to end here
+Public free-features promise,fix,should,no,no,X3 -> replica-launch
+No watermark on any plan,fix,must,no,yes,X4 true today
+Cancel in two clicks and renewal reminder,fix,should,no,no,X5 -> replica-backend
+Project file export and import (.videoed),fix,should,no,no,X6
+Works offline after first visit (PWA),fix,should,no,no,X7
+Export failure falls back to 720p automatically,fix,could,no,no,X8
