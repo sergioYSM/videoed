@@ -1,4 +1,5 @@
 'use client';
+import { useId } from 'react';
 import { useEditor } from '@/store/editor';
 import { setClip, clipLength, updateText, updateAudio, updateCue, FONTS, type FontId, type TextItem, type AudioItem, type Cue, type Clip } from '@/lib/project';
 import { NumberField } from '@/components/ui/NumberField';
@@ -47,11 +48,12 @@ function ClipSettings({ c }: { c: Clip }) {
 }
 
 function TextSettings({ t }: { t: TextItem }) {
+  const uid = useId();   // two inspectors can be mounted (desktop + phone sheet): ids must be unique
   const up = (patch: Parameters<typeof updateText>[2], key?: string) => apply((q) => updateText(q, t.id, patch), key);
   return (
     <div className="space-y-3" onPointerUp={end}>
-      <div><label htmlFor="txt" className="mb-1 block text-sm text-text-muted">Texto</label>
-        <textarea id="txt" key={t.id} defaultValue={t.text} rows={3} maxLength={500} onChange={(e) => up({ text: e.target.value }, `txt-${t.id}`)} onBlur={end}
+      <div><label htmlFor={`${uid}-txt`} className="mb-1 block text-sm text-text-muted">Texto</label>
+        <textarea id={`${uid}-txt`} key={t.id} defaultValue={t.text} rows={3} maxLength={500} onChange={(e) => up({ text: e.target.value }, `txt-${t.id}`)} onBlur={end}
           className="w-full resize-y rounded-sm border border-border-input bg-surface-raised px-2 py-1.5 focus:border-focus focus:outline-none" /></div>
       <div className="grid grid-cols-2 gap-2">
         <label className="text-sm text-text-muted">Fuente

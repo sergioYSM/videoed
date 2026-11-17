@@ -58,13 +58,13 @@ export function Timeline({ onSeek, onPause }: { onSeek: (ms: number) => void; on
   const dropX = drag && drag.to !== drag.from ? (drag.to >= p.clips.length - 1 && drag.to > drag.from ? x(total) : x(st[drag.to > drag.from ? drag.to + 1 : drag.to] ?? total)) : null;
 
   return (
-    <section aria-label="Línea de tiempo" className="flex h-[var(--timeline-default)] shrink-0 flex-col border-t border-border bg-surface">
+    <section aria-label="Línea de tiempo" className="flex h-[var(--timeline-default)] shrink-0 flex-col border-t border-border bg-surface max-md:h-[34dvh]">
       <div className="flex items-center gap-1 border-b border-border px-2 py-1">
         <IconButton label="Cortar en el cabezal (S)" onClick={() => { onPause(); const n = p.clips.length; apply((q) => split(q, playhead)); if (useEditor.getState().project!.clips.length > n) notify('Clip cortado', true); }} disabled={!p.clips.length}><Scissors size={16} /></IconButton>
         <IconButton label="Recortar el inicio hasta el cabezal ([)" onClick={() => { const h = locate(p, playhead); if (h) { onPause(); apply((q) => trim(q, h.clip.id, 'start', h.sourceMs)); onSeek(h.startMs); } }} disabled={!p.clips.length}><ArrowLeftToLine size={16} /></IconButton>
         <IconButton label="Recortar el final hasta el cabezal (])" onClick={() => { const h = locate(p, playhead); if (h) { onPause(); apply((q) => trim(q, h.clip.id, 'end', h.sourceMs)); } }} disabled={!p.clips.length}><ArrowRightToLine size={16} /></IconButton>
         <IconButton label="Borrar lo seleccionado (Supr)" onClick={() => { if (selected) { apply((q) => removeSelected(q, selected)); select(null); notify('Borrado', true); } }} disabled={!selected}><Trash2 size={16} /></IconButton>
-        <span className="mono ml-3 text-xs text-text-muted">{p.clips.length} clips · {shortDuration(total)}</span>
+        <span className="mono ml-3 text-xs text-text-muted">{p.clips.length} {p.clips.length === 1 ? 'clip' : 'clips'} · {shortDuration(total)}</span>
         <div className="ml-auto flex items-center gap-1">
           <IconButton label="Alejar (-)" onClick={() => setPps(pps / 1.25)}><ZoomOut size={16} /></IconButton>
           <IconButton label="Acercar (+)" onClick={() => setPps(pps * 1.25)}><ZoomIn size={16} /></IconButton>

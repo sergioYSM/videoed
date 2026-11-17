@@ -8,6 +8,8 @@ import { Preview, type PreviewHandle } from './Preview';
 import { Timeline } from './Timeline';
 import { Inspector } from './Inspector';
 import { ExportDialog } from './ExportDialog';
+import { InspectorBody } from './Inspector';
+import { Film, Type, Captions, Music, SlidersHorizontal, X } from 'lucide-react';
 import { split, removeClip, removeText, removeAudio, removeCue, duration, locate, trim } from '@/lib/project';
 import { TextPanel } from './TextPanel';
 import { AudioPanel } from './AudioPanel';
@@ -22,9 +24,13 @@ export function removeSelected(p: Project, id: string): Project {
   return removeCue(p, id);
 }
 
+const SHEET_LABEL = { media: 'Medios', text: 'Texto', captions: 'Subtítulos', audio: 'Audio', settings: 'Ajustes' } as const;
+const SHEET_ICON = { media: Film, text: Type, captions: Captions, audio: Music, settings: SlidersHorizontal } as const;
+
 export function Editor({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<RailTab>('media');
   const [exporting, setExporting] = useState(false);
+  const [sheet, setSheet] = useState<RailTab | 'settings' | null>(null);   // phones: panels open as a bottom sheet
   const preview = useRef<PreviewHandle>(null);
   const name = useEditor((s) => s.project?.name);
   const toast = useEditor((s) => s.toast);
@@ -68,7 +74,7 @@ export function Editor({ projectId }: { projectId: string }) {
     <div className="flex h-dvh flex-col">
       <TopBar onExport={() => setExporting(true)} />
       <div className="flex min-h-0 flex-1">
-        <nav aria-label="Herramientas" className="flex"><Rail active={tab} onChange={setTab} /></nav>
+        <nav aria-label="Herramientas" className="flex max-md:hidden"><Rail active={tab} onChange={setTab} /></nav>
         <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`rail-${tab}`} className="w-panel shrink-0 overflow-y-auto border-r border-border bg-surface p-3 max-md:hidden">
           {tab === 'media' ? <MediaPanel projectId={projectId} /> : tab === 'text' ? <TextPanel /> : tab === 'captions' ? <CaptionsPanel projectId={projectId} /> : <AudioPanel projectId={projectId} />}
         </div>
@@ -76,6 +82,23 @@ export function Editor({ projectId }: { projectId: string }) {
         <Inspector />
       </div>
       <Timeline onSeek={(ms) => preview.current?.seek(ms)} onPause={() => preview.current?.pause()} />
+      {sheet && (
+        <div role="dialog" aria-modal="false" aria-label={SHEET_LABEL[sheet]} className="fixed inset-x-0 bottom-14 z-40 max-h-[55dvh] overflow-y-auto rounded-t-lg border-t border-border bg-surface p-3 shadow-pop md:hidden">
+          <button type="button" onClick={() => setSheet(null)} aria-label="Cerrar panel" className="float-right inline-flex h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-surface-hover"><X size={18} /></button>
+          {sheet === 'media' ? <MediaPanel projectId={projectId} /> : sheet === 'text' ? <TextPanel /> : sheet === 'captions' ? <CaptionsPanel projectId={projectId} /> : sheet === 'audio' ? <AudioPanel projectId={projectId} /> : <><h2 className="mb-3 font-semibold">Ajustes</h2><InspectorBody /></>}
+        </div>
+      )}
+      <nav aria-label="Paneles" className="grid h-14 shrink-0 grid-cols-5 border-t border-border bg-surface md:hidden">
+        {(Object.keys(SHEET_LABEL) as (keyof typeof SHEET_LABEL)[]).map((k) => {
+          const Icon = SHEET_ICON[k];
+          return (
+            <button key={k} type="button" aria-pressed={sheet === k} onClick={() => setSheet(sheet === k ? null : k)}
+              className={`flex flex-col items-center justify-center gap-0.5 text-2xs ${sheet === k ? 'text-accent' : 'text-text-muted'}`}>
+              <Icon size={20} aria-hidden />{SHEET_LABEL[k]}
+            </button>
+          );
+        })}
+      </nav>
       {exporting && <ExportDialog projectId={projectId} onClose={() => setExporting(false)} />}
       <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center">
         {toast && <div key={toast.id} className="pointer-events-auto flex items-center gap-4 rounded-md bg-text px-4 py-2 text-sm font-semibold text-bg shadow-pop">

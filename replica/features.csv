@@ -4,29 +4,29 @@ Projects list with reopen and autosave,projects,must,yes,yes,IndexedDB; autosave
 Import video image and audio files (drag and drop),media,must,yes,yes,to OPFS (never uploaded); HEVC/unknown/broken explained; 4 GB cap; audio files stored but no audio track yet
 Preview canvas with play pause scrub,editor,must,yes,yes,audio-clock master; same draw function as export; e2e pixel checks
 Timeline with clips in order and a playhead,timeline,must,yes,yes,single magnetic main track
-Trim clip ends,timeline,must,yes,partial,drag handles on the selected clip; frame-snapped (unit tested); no keyboard trim; not covered by e2e yet
+Trim clip ends,timeline,must,yes,yes,"drag handles, or [ and ] to the playhead (keyboard); e2e"
 Split at playhead,timeline,must,yes,yes,S key or scissors; e2e
 Delete and reorder clips,timeline,must,yes,yes,drag or Alt+arrows; e2e
 Undo and redo,editor,must,yes,yes,"200 steps, drags coalesced"
-Add text layer with basic style,text,must,yes,no,
-Move and scale layers on the canvas,editor,must,yes,no,
-Auto-captions from speech,captions,must,yes,no,free plan limited in the original
-Edit caption lines and style,captions,must,yes,no,
-Add music track with trim volume and fade,audio,must,yes,no,
+Add text layer with basic style,text,must,yes,yes,"3 styles, 5 OFL fonts, colour, outline, background, alignment, duration; e2e checks exported pixels"
+Move and scale layers on the canvas,editor,must,yes,yes,"text: drag, corner scale, arrow keys; video clips use fill/fit only (no free transform yet)"
+Auto-captions from speech,captions,must,yes,partial,"on-device Whisper written; model host blocked here, so never run end to end; failure path tested"
+Edit caption lines and style,captions,must,yes,yes,"edit lines, 3 styles, height, .srt import/export; e2e checks exported caption box"
+Add music track with trim volume and fade,audio,must,yes,yes,"audio track: move, trim, volume, fades (e2e measures fade-in in the export)"
 Export MP4 1080p without watermark,export,must,yes,yes,H.264 High + AAC (WASM fallback); 720p/1080p; verified with ffprobe and pixel colours
 Keyboard shortcuts (space split delete undo),editor,must,yes,yes,"Space, S, Supr, Ctrl+Z/Y, arrows, +/-, Ctrl+E"
 Multiple tracks (overlays picture in picture),timeline,should,yes,no,
 Snapping on timeline and canvas,timeline,should,yes,no,
 Timeline zoom,timeline,should,yes,yes,+/- and fit
 Clip speed,editor,should,yes,no,
-Mute or detach original audio,audio,should,yes,no,
+Mute or detach original audio,audio,should,yes,partial,clip volume 0-200 %; no detach
 Crop and fit or fill frame,editor,should,yes,partial,fill/fit per clip; no free crop
 Fade in out and simple transitions,editor,should,yes,no,
 Text animations (in out),text,should,yes,no,
 Caption style presets (word highlight),captions,should,yes,no,
 Export 4K and 60fps,export,should,yes,no,Pro in the original
-Music library (CC licensed),audio,should,yes,no,from Clipsong
-Mobile layout,platform,should,yes,no,panels hidden under 900px: importing is not possible on a phone yet
+Music library (CC licensed),audio,should,yes,partial,4 Clipsong demo tracks bundled with licence and credit; real catalogue needs Clipsong live
+Mobile layout,platform,should,yes,yes,"bottom tabs + sheets under 768 px; Pixel 7 e2e imports, edits and exports"
 Accounts and cloud backup of projects,projects,should,yes,no,
 Templates,projects,could,yes,no,
 Background removal,editor,could,yes,no,

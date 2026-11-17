@@ -42,7 +42,7 @@ export const Preview = forwardRef<PreviewHandle, { projectId: string }>(function
 
   return (
     <section aria-label="Vista previa" className="flex min-w-0 flex-1 flex-col bg-bg">
-      <div className="relative flex min-h-0 flex-1 items-center justify-center p-4">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center p-4 max-md:p-2">
         <canvas ref={canvas} width={W} height={H} className="max-h-full max-w-full bg-canvas-bg shadow-pop" style={{ aspectRatio: `${p.width} / ${p.height}` }}
           role="img" aria-label={p.clips.length ? 'Fotograma actual del vídeo' : 'Vista previa vacía'} />
         <CanvasOverlay canvas={canvas} />

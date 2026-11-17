@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Plus, Upload, Download, Sparkles, Trash2 } from 'lucide-react';
 import { useEditor } from '@/store/editor';
 import { addCue, updateCue, removeCue, setCues, setCaptionStyle, type CaptionPreset } from '@/lib/project';
@@ -15,6 +15,7 @@ export function CaptionsPanel({ projectId }: { projectId: string }) {
   const playhead = useEditor((s) => s.playhead);
   const { apply, notify } = useEditor.getState();
   const [lang, setLang] = useState(p.captions.lang ?? 'es');
+  const langId = useId();
   const [status, setStatus] = useState<{ text: string; f?: number; error?: boolean } | null>(null);
   const cues = p.captions.cues;
 
@@ -51,8 +52,8 @@ export function CaptionsPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-3 font-semibold">Subtítulos</h2>
       <section aria-label="Generar automáticamente" className="mb-4 rounded-md border border-border bg-surface-raised p-3">
         <div className="mb-2 flex items-center gap-2">
-          <label htmlFor="cap-lang" className="text-sm text-text-muted">Idioma</label>
-          <select id="cap-lang" value={lang} onChange={(e) => setLang(e.target.value)} className="flex-1 rounded-sm border border-border-input bg-surface px-2 py-1 text-sm">
+          <label htmlFor={langId} className="text-sm text-text-muted">Idioma</label>
+          <select id={langId} value={lang} onChange={(e) => setLang(e.target.value)} className="flex-1 rounded-sm border border-border-input bg-surface px-2 py-1 text-sm">
             <option value="es">Español</option><option value="en">Inglés</option><option value="pt">Portugués</option><option value="fr">Francés</option><option value="it">Italiano</option><option value="de">Alemán</option><option value="ca">Catalán</option>
           </select>
         </div>

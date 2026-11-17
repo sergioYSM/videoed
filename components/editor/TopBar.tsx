@@ -15,15 +15,15 @@ export function TopBar({ onExport }: { onExport: () => void }) {
       <Link href="/" aria-label="Volver a tus proyectos" title="Volver a tus proyectos" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-muted hover:bg-surface-hover hover:text-text"><ArrowLeft size={18} /></Link>
       <label className="sr-only" htmlFor="pname">Nombre del proyecto</label>
       <input id="pname" defaultValue={p.name} key={p.id} maxLength={120} onBlur={(e) => apply((q) => rename(q, e.target.value))} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-        className="w-64 min-w-0 truncate rounded-sm bg-transparent px-2 py-1 font-semibold hover:bg-surface-hover focus:bg-surface-raised focus:outline-none" />
-      <span className="mono rounded-xs border border-border px-1.5 text-2xs text-text-muted">{p.aspect}</span>
-      <span className="flex items-center gap-1 text-xs text-text-muted" role="status">
+        className="w-64 min-w-0 truncate rounded-sm max-md:w-auto max-md:flex-1 bg-transparent px-2 py-1 font-semibold hover:bg-surface-hover focus:bg-surface-raised focus:outline-none" />
+      <span className="mono rounded-xs border border-border px-1.5 text-2xs text-text-muted max-sm:hidden">{p.aspect}</span>
+      <span className="flex items-center gap-1 text-xs text-text-muted max-md:sr-only" role="status">
         {save === 'saving' ? <><Loader2 size={12} className="animate-spin" aria-hidden />Guardando…</> : save === 'error' ? <span className="flex items-center gap-1 text-warning"><AlertTriangle size={12} aria-hidden />Sin guardar: el navegador no tiene espacio</span> : <><Check size={12} aria-hidden />Guardado en este navegador</>}
       </span>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <IconButton label="Deshacer (Ctrl+Z)" onClick={undo} disabled={!canUndo}><Undo2 size={16} /></IconButton>
         <IconButton label="Rehacer (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo}><Redo2 size={16} /></IconButton>
-        <Button variant="primary" className="ml-2" onClick={onExport} disabled={!p.clips.length}><Download size={16} aria-hidden />Exportar</Button>
+        <Button variant="primary" className="ml-2 max-sm:px-2" onClick={onExport} disabled={!p.clips.length} aria-label="Exportar"><Download size={16} aria-hidden /><span className="max-sm:hidden">Exportar</span></Button>
       </div>
     </header>
   );
